@@ -3,6 +3,7 @@ package com.anticipate.listr.jwt_handling.controllers;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
+import com.anticipate.listr.jwt_handling.dtos.RegisterEmailDto;
 import com.anticipate.listr.jwt_handling.responses.LoginResponse;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
@@ -41,4 +42,16 @@ public class AuthenticationController {
 
         return ResponseEntity.ok(loginResponse);
     }
+
+    // TEST ENDPOINTS
+    @PostMapping("/test-signup")
+    public String register(@RequestBody RegisterEmailDto registerEmailDto) {
+        
+        
+
+        System.out.println("Registered email.");
+        
+        return "You passed the following email: '" + registerEmailDto.getEmail() + "'";
+    }
+
 }

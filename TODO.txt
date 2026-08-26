@@ -1,0 +1,3 @@
+HIGH PRIORITY
+ - Automate the configuration of SMTP server setup (properties write to application.properties)
+ 
