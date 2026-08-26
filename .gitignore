@@ -1,0 +1,6 @@
+target/
+*.class
+src/main/resources/application.properties
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
