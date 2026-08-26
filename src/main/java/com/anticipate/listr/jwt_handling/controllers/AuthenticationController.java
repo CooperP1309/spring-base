@@ -12,17 +12,30 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 
 @RequestMapping("/auth")
 @RestController
 public class AuthenticationController {
+
+    @Value("${smtp.sender.email}")
+    private String senderEmail;
+
+    @Value("${smtp.receiver.email}")
+    private String receiverEmail;
+
+    private JavaMailSender mailSender;
+
     private final JwtService jwtService;
     
     private final AuthenticationService authenticationService;
 
-    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService) {
+    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService, JavaMailSender mailSender) {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
+        this.mailSender = mailSender;
     }
 
     @PostMapping("/signup")
@@ -47,10 +60,20 @@ public class AuthenticationController {
     @PostMapping("/test-signup")
     public String register(@RequestBody RegisterEmailDto registerEmailDto) {
         
-        
+        String body = "This is a test email!!!!";
+        String subject = "TEST";
 
         System.out.println("Registered email.");
         
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(this.senderEmail);
+        message.setTo(this.receiverEmail);
+        message.setSubject(subject);
+        message.setText(body);
+        
+        mailSender.send(message);
+
         return "You passed the following email: '" + registerEmailDto.getEmail() + "'";
     }
 
