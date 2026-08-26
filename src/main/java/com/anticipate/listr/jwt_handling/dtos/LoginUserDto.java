@@ -1,9 +1,12 @@
 package com.anticipate.listr.jwt_handling.dtos;
 
 public class LoginUserDto {
+    
     private String email;
 
     private String password;
+
+    private boolean emailValid;
 
     public String getEmail() {
         return email;
@@ -21,5 +24,18 @@ public class LoginUserDto {
     public LoginUserDto setPassword(String password) {
         this.password = password;
         return this;
+    }
+
+    public boolean getEmailValid() {
+        return emailValid;
+    } 
+
+    public LoginUserDto setEmailValid(boolean emailValid) {
+        this.emailValid = emailValid;
+        return this;
+    } 
+
+    public LoginUserDto() {
+
     }
 }

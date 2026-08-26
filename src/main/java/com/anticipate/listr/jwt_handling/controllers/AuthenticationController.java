@@ -9,15 +9,20 @@ import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.stereotype.Controller;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
 @RequestMapping("/auth")
-@RestController
+@Controller
 public class AuthenticationController {
 
     @Value("${smtp.sender.email}")
@@ -57,9 +62,11 @@ public class AuthenticationController {
     }
 
     // TEST ENDPOINTS
-    @PostMapping("/test-signup")
-    public String register(@RequestBody RegisterEmailDto registerEmailDto) {
-        
+    @ResponseBody
+    @PostMapping("/test-email")
+    public String test_email(@RequestBody RegisterEmailDto registerEmailDto) {
+       
+       /* 
         String body = "This is a test email!!!!";
         String subject = "TEST";
 
@@ -73,8 +80,27 @@ public class AuthenticationController {
         message.setText(body);
         
         mailSender.send(message);
+        */
 
         return "You passed the following email: '" + registerEmailDto.getEmail() + "'";
+    }
+
+    @GetMapping("/register-page")
+    public String register_page(Model model) {
+
+        model.addAttribute("user", new LoginUserDto());
+
+        return "register-page";
+    }
+
+    @PostMapping("/test-register")
+    public String test_register(@ModelAttribute("user") LoginUserDto newUser) {
+
+        System.out.println("\nRegistered email:" + newUser.getEmail() + "\nI shouldn't know this: " + newUser.getPassword() + "\n");
+
+        newUser.setEmailValid(true);
+
+        return "register-page";
     }
 
 }
