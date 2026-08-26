@@ -1,0 +1,15 @@
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/ListrApplication.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/configs/ApplicationConfiguration.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/configs/JwtAuthenticationFilter.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/configs/SecurityConfiguration.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/controllers/AuthenticationController.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/controllers/UserController.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/dtos/LoginUserDto.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/dtos/RegisterUserDto.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/entities/User.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/exceptions/GlobalExceptionHandler.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/repositories/UserRepository.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/responses/LoginResponse.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/services/AuthenticationService.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/services/JwtService.java
+/home/cooperp/projects/jwt-springboot/src/main/java/com/anticipate/listr/jwt_handling/services/UserService.java
