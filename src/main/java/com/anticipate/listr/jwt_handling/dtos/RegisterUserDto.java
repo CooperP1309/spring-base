@@ -44,4 +44,13 @@ public class RegisterUserDto {
         this.emailVerified = emailVerified;
         return this;
     }
+
+    public RegisterUserDto() {
+    }
+
+    public RegisterUserDto(String email, String fullName, String password) {
+        this.email = email;
+        this.fullName = fullName;
+        this.password = password;
+    }
 }

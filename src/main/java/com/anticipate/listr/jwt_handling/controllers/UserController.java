@@ -1,11 +1,14 @@
 package com.anticipate.listr.jwt_handling.controllers;
 
+import com.anticipate.listr.jwt_handling.dtos.DeleteUserDto;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.services.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,12 +31,18 @@ public class UserController {
 
         return ResponseEntity.ok(currentUser);
     }
-/*
+
     @GetMapping("/")
     public ResponseEntity<List<User>> allUsers() {
         List <User> users = userService.allUsers();
 
         return ResponseEntity.ok(users);
     }
-*/
+
+    @PostMapping("/delete")
+    public ResponseEntity<Void> deleteUser(@RequestBody DeleteUserDto deleteUserDto) {
+        userService.deleteByEmail(deleteUserDto.getEmail());
+
+        return ResponseEntity.noContent().build();
+    }
 }

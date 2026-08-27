@@ -98,13 +98,4 @@ public class AuthenticationService {
 
         return true;
     }
-
-
-    // TEST ENDPOINT TO DELETE LATER
-    public String generateSecret() {
-
-        // CHECK THAT THE SECRET DOESN'T ALREADY EXIST
-
-        return secretGeneratorService.generateSecureSecret();
-    }
 }

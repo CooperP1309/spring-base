@@ -1,6 +1,15 @@
 HIGH PRIORITY
- - Ensure Email Verification Secret generated doesn't already exist
+[ ] Ensure Email Verification Secret generated doesn't already exist
  
- - Automate the configuration of SMTP server setup (properties write to application.properties)
+[ ] Automate the configuration of SMTP server setup (properties write to application.properties)
  
- - Remove UserRepository from AuthController. Should only be interfaced via Auth..Service
+[ ] Remove UserRepository from AuthController. Should only be interfaced via Auth..Service
+
+[ ] Remove hardcoding of localhost from generated verification link (add app.properties variable)
+
+[ ] Handle email already exists in DB
+
+ LOW PRIORITY
+[X] Remove EmailValid bool from RegisterUserDto
+
+[ ] Fix log chains for user not enabled, duplicate email, invalid session token...

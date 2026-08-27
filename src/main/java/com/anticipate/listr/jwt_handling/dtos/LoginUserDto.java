@@ -6,8 +6,6 @@ public class LoginUserDto {
 
     private String password;
 
-    private boolean emailValid;
-
     private boolean emailVerified;
 
     public String getEmail() {
@@ -27,15 +25,6 @@ public class LoginUserDto {
         this.password = password;
         return this;
     }
-
-    public boolean getEmailValid() {
-        return emailValid;
-    } 
-
-    public LoginUserDto setEmailValid(boolean emailValid) {
-        this.emailValid = emailValid;
-        return this;
-    } 
 
     public boolean getEmailVerified() {
         return emailVerified;

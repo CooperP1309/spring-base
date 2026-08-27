@@ -73,8 +73,7 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         // only allow login if email is verified
-        //return emailVerified;
-        return true;
+        return emailVerified;
     }
     
     public Integer getId() {
