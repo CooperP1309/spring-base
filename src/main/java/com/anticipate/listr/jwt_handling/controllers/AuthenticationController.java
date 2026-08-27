@@ -7,6 +7,7 @@ import com.anticipate.listr.jwt_handling.dtos.RegisterEmailDto;
 import com.anticipate.listr.jwt_handling.responses.LoginResponse;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
+import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,15 +37,18 @@ public class AuthenticationController {
 
     private EmailValidator emailValidator;
 
+    private final UserRepository userRepository;
+
     private final JwtService jwtService;
     
     private final AuthenticationService authenticationService;
 
-    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService, JavaMailSender mailSender) {
+    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService, JavaMailSender mailSender, UserRepository userRepository) {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
         this.mailSender = mailSender;
         this.emailValidator = EmailValidator.getInstance();
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/signup")
@@ -93,6 +97,23 @@ public class AuthenticationController {
         return "The following email: '" + registerEmailDto.getEmail() + "' has validity: " + emailValid;
     }
 
+    @PostMapping("/test-emailVerification")
+    @ResponseBody
+    public String test_emailVerification(@RequestBody LoginUserDto loginUserDto) {
+
+        //User newUser = userRepository.findByEmail(loginUserDto.getEmail());
+
+
+        User newUser = userRepository.findByEmail(loginUserDto.getEmail()).orElseThrow();
+
+
+
+        System.out.println("Email '" + newUser.getEmail() + "' verified = " + newUser.getEmailVerified());
+
+        return "Email '" + newUser.getEmail() + "' verified = " + newUser.getEmailVerified();
+    }    
+
+    // PROTOTYPE ENDPOINTS
     @GetMapping("/register-page")
     public String register_page(Model model) {
 
@@ -102,21 +123,27 @@ public class AuthenticationController {
     }
 
     @PostMapping("/test-register")
+    /*  
+    *   Triggers a prototype pipeline
+    *   
+    *   This function is called when the above prototype form is
+    *   submitted. The passed email is first validated.
+    *   Should validation pass, the registration pipline carries out.
+    *   A new user is registered and the verification email pipeline
+    *   is initiated.
+    */
     public String test_register(@ModelAttribute("user") LoginUserDto newUser) {
 
-    
+        // determine email format valid before continuing pipeline
+        if (!this.emailValidator.isValid(newUser.getEmail())) {
+            newUser.setEmailValid(false);
 
+            return "register-page";
+        }
 
+        newUser.setEmailValid(true);
 
-
-
-
-
-
-
-
-
-
+        // add user to db
 
 
 

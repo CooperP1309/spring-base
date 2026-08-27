@@ -8,6 +8,8 @@ public class LoginUserDto {
 
     private boolean emailValid;
 
+    private boolean emailVerified;
+
     public String getEmail() {
         return email;
     }
@@ -32,6 +34,15 @@ public class LoginUserDto {
 
     public LoginUserDto setEmailValid(boolean emailValid) {
         this.emailValid = emailValid;
+        return this;
+    } 
+
+    public boolean getEmailVerified() {
+        return emailVerified;
+    } 
+
+    public LoginUserDto setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
         return this;
     } 
 

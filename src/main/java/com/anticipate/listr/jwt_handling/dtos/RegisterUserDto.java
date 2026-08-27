@@ -7,6 +7,8 @@ public class RegisterUserDto {
 
     private String fullName;
 
+    private boolean emailVerified;
+
     public String getEmail() {
         return email;
     }
@@ -31,6 +33,15 @@ public class RegisterUserDto {
 
     public RegisterUserDto setFullName(String fullName) {
         this.fullName = fullName;
+        return this;
+    }
+
+    public boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public RegisterUserDto setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
         return this;
     }
 }
