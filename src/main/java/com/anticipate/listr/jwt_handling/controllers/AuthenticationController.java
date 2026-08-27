@@ -8,6 +8,7 @@ import com.anticipate.listr.jwt_handling.responses.LoginResponse;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
+import com.anticipate.listr.jwt_handling.services.SMTPService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import java.util.Optional;
@@ -17,41 +18,36 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.stereotype.Controller;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.apache.commons.validator.routines.EmailValidator;
 
 @RequestMapping("/auth")
 @Controller
 public class AuthenticationController {
 
-    @Value("${smtp.sender.email}")
-    private String senderEmail;
-
-    @Value("${smtp.receiver.email}")
-    private String receiverEmail;
-
-    private JavaMailSender mailSender;
+    private final JwtService jwtService;
+    
+    private final AuthenticationService authenticationService;
 
     private EmailValidator emailValidator;
 
     private final UserRepository userRepository;
 
-    private final JwtService jwtService;
-    
-    private final AuthenticationService authenticationService;
+    private final SMTPService smtpService;
 
-    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService, JavaMailSender mailSender, UserRepository userRepository) {
+    public AuthenticationController(JwtService jwtService, 
+                                    AuthenticationService authenticationService, 
+                                    UserRepository userRepository,
+                                    SMTPService smtpService) {
+
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
-        this.mailSender = mailSender;
         this.emailValidator = EmailValidator.getInstance();
         this.userRepository = userRepository;
+        this.smtpService = smtpService;
     }
 
     @PostMapping("/signup")
@@ -134,12 +130,13 @@ public class AuthenticationController {
         return "Email '" + registerEmailDto.getEmail() + "' verified";
     }
 
+/*
     @PostMapping("/generate-secret")
     @ResponseBody
     public String generate_secret(@RequestBody RegisterEmailDto registerEmailDto) {
 
         return authenticationService.generateSecret();
-    }
+    }*/
 
     @PostMapping("/test-secret")
     @ResponseBody
@@ -199,22 +196,23 @@ public class AuthenticationController {
     *   A new user is registered and the verification email pipeline
     *   is initiated.
     */
-    public String test_register(@ModelAttribute("user") RegisterUserDto newUser) {
+    public String test_register(@ModelAttribute("user") RegisterUserDto newUser, Model model) {
 
         // determine email format valid before continuing pipeline
         if (!this.emailValidator.isValid(newUser.getEmail())) {
-            newUser.setEmailValid(false);
+            model.addAttribute("emailValid", false);
 
             return "register-page";
         }
 
-        newUser.setEmailValid(true);
+        model.addAttribute("emailValid", true);
 
         // add user to db
         User registeredUser = authenticationService.signup(newUser);
 
-        System.out.println("\nRegistered user: " + registeredUser.getEmail()
-                + "\nVerification Link: 'http://localhost:8005/auth/verify/" + registeredUser.getEmailVerificationSecret() + "'\n");
+        // send the user their verification link
+        String result = smtpService.sendVerificationLink(
+            registeredUser.getEmailVerificationSecret(), registeredUser.getEmail());
 
         return "register-page";
     }

@@ -50,8 +50,8 @@
 
                     <!-- Email Verification Result -->
                     <div th:if="${not #strings.isEmpty(user.email)}" class="mt-3">
-                        <p th:if="${user.emailValid}" class="alert alert-success text-center mb-0">Verification Email Sent</p>
-                        <p th:unless="${user.emailValid}" class="alert alert-danger text-center mb-0">Invalid Email Provided</p>
+                        <p th:if="${emailValid}" class="alert alert-success text-center mb-0">Verification Email Sent</p>
+                        <p th:unless="${emailValid}" class="alert alert-danger text-center mb-0">Invalid Email Provided</p>
                     </div>
 
                 </div>
