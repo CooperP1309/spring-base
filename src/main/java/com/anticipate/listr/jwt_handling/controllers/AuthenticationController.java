@@ -1,17 +1,18 @@
 package com.anticipate.listr.jwt_handling.controllers;
 
+/* ===== local libs ===== */
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
-import com.anticipate.listr.jwt_handling.dtos.RegisterEmailDto;
 import com.anticipate.listr.jwt_handling.responses.LoginResponse;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.services.SMTPService;
+
+/* ===== spring libs ===== */
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
-import java.util.Optional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,9 +25,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.stereotype.Controller;
 import org.apache.commons.validator.routines.EmailValidator;
 
+/* ===== java libs =====*/
+import java.util.Optional;
+
 @RequestMapping("/auth")
 @Controller
-public class AuthenticationController {
+public class AuthenticationController 
+{
 
     private final JwtService jwtService;
     
@@ -41,7 +46,8 @@ public class AuthenticationController {
     public AuthenticationController(JwtService jwtService, 
                                     AuthenticationService authenticationService, 
                                     UserRepository userRepository,
-                                    SMTPService smtpService) {
+                                    SMTPService smtpService) 
+    {
 
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
@@ -50,15 +56,14 @@ public class AuthenticationController {
         this.smtpService = smtpService;
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<User> register(@RequestBody RegisterUserDto registerUserDto) {
-        User registeredUser = authenticationService.signup(registerUserDto);
-
-        return ResponseEntity.ok(registeredUser);
-    }
-
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto) {
+    /*  For authorizing user login credentials
+     *
+     *  This endpoint deserializes JSON and authenticates
+     *  the passed login credentials to produce a JWT token.
+     */
+    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto) 
+    {
         User authenticatedUser = authenticationService.authenticate(loginUserDto);
 
         String jwtToken = jwtService.generateToken(authenticatedUser);
@@ -68,140 +73,60 @@ public class AuthenticationController {
         return ResponseEntity.ok(loginResponse);
     }
 
-    // TEST ENDPOINTS
-    @ResponseBody
-    @PostMapping("/test-email")
-    public String test_email(@RequestBody RegisterEmailDto registerEmailDto) {
-       
-       /* 
-        String body = "This is a test email!!!!";
-        String subject = "TEST";
-
-        System.out.println("Registered email.");
-        
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(this.senderEmail);
-        message.setTo(this.receiverEmail);
-        message.setSubject(subject);
-        message.setText(body);
-        
-        mailSender.send(message);
-        */
-
-        EmailValidator validator = EmailValidator.getInstance();
-
-        boolean emailValid = validator.isValid(registerEmailDto.getEmail());
-
-        return "The following email: '" + registerEmailDto.getEmail() + "' has validity: " + emailValid;
-    }
-
-    @PostMapping("/test-emailVerification")
-    @ResponseBody
-    public String test_emailVerification(@RequestBody LoginUserDto loginUserDto) {
-
-        //User newUser = userRepository.findByEmail(loginUserDto.getEmail());
-
-
-        User newUser = userRepository.findByEmail(loginUserDto.getEmail()).orElseThrow();
-
-
-
-        System.out.println("Email '" + newUser.getEmail() + "' verified = " + newUser.getEmailVerified());
-
-        return "Email '" + newUser.getEmail() + "' verified = " + newUser.getEmailVerified();
-    }    
-
-    @PostMapping("/set-emailVerification")
-    @ResponseBody
-    public String set_emailVerification(@RequestBody RegisterEmailDto registerEmailDto) {
-
-        authenticationService.setEmailAsVerified(registerEmailDto.getEmail());
-
-        return "Email '" + registerEmailDto.getEmail() + "' verified";
-    }
-
-    @PostMapping("/unset-emailVerification")
-    @ResponseBody
-    public String unset_emailVerification(@RequestBody RegisterEmailDto registerEmailDto) {
-
-        authenticationService.setEmailAsNotVerified(registerEmailDto.getEmail());
-
-        return "Email '" + registerEmailDto.getEmail() + "' verified";
-    }
-
-/*
-    @PostMapping("/generate-secret")
-    @ResponseBody
-    public String generate_secret(@RequestBody RegisterEmailDto registerEmailDto) {
-
-        return authenticationService.generateSecret();
-    }*/
-
-    @PostMapping("/test-secret")
-    @ResponseBody
-    public String test_email_secret(@RequestBody RegisterEmailDto registerEmailDto) {
-
-        User newUser = userRepository.findByEmail(registerEmailDto.getEmail()).orElseThrow();
-
-        String secret = newUser.getEmailVerificationSecret();
-        String userEmail = newUser.getEmail();
-
-        System.out.println("User '" + userEmail + "' has secret: '" + secret + "'\n");
-
-        return "secret for '" + newUser.getEmail() + "' = " + secret;
-    }
-
-    @GetMapping("/find-by-secret/{secret}")
-    @ResponseBody
-    public ResponseEntity<String> find_by_secret(@PathVariable String secret) {
-
-        System.out.println("Searching for user with secret: '" + secret + "'\n");
-
-        boolean verified = authenticationService.verifyEmailSecret(secret);
-
-        if (!verified) {
-            return ResponseEntity
-                    .status(HttpStatus.GONE)
-                    .body("This verification link is invalid or has expired.");
-        }
-
-        return ResponseEntity.ok("Email has been verified.");
-    }
-
-    // PROTOTYPE ENDPOINTS
     @GetMapping("/login-page")
-    public String login_page(Model model) {
-
+    /*  Presents a login form
+     *
+     *  This endpoint responds with a login form.
+     *  The forms login button is linked to the above
+     *  login endpoint. The form in question uses JS
+     *  voodoo to serialize the login credentials to JSON.
+     *  This is because apparently you can't build JSON bodies
+     *  from html forms, and I wanted to keep the backend as
+     *  standard as possible. Extra note, form has a signup
+     *  buttom which links to the /register-page endpoint.
+     */
+    public String loginPage(Model model) 
+    {
         model.addAttribute("user", new LoginUserDto());
 
         return "login-page";
     }
     
     @GetMapping("/register-page")
-    public String register_page(Model model) {
-
+    /*  Presents the user registration page
+     *  
+     *  This form allows users to input their full name,
+     *  email and password in order to create a new account.
+     *  Once these details are submitted, the fields are passed
+     *  to /register where the registration pipeline is 
+     *  carried out.
+     */
+    public String registerPage(Model model) 
+    {
         model.addAttribute("user", new RegisterUserDto());
 
         return "register-page";
     }
 
-    @PostMapping("/test-register")
+    @PostMapping("/register")
     /*  
-    *   Triggers a prototype pipeline
+    *   Encapsulates the entire registration process
     *   
-    *   This function is called when the above prototype form is
-    *   submitted. The passed email is first validated.
-    *   Should validation pass, the registration pipline carries out.
-    *   A new user is registered and the verification email pipeline
-    *   is initiated.
+    *   This function is responsible for the entire registration
+    *   pipeline. A new user goes in (contains email, full name and password).  
+    *   Immediately, the validity of the provided email is checked. If valid,
+    *   the user is added to the database, with a verified field set to false.
+    *   The sending of a verification email is triggered. The email in question
+    *   will contain a link that won't allow loggin in with the account 
+    *   until the link is opened.
     */
-    public String test_register(@ModelAttribute("user") RegisterUserDto newUser, Model model) {
+    public String register(@ModelAttribute("user") RegisterUserDto newUser, Model model) 
+    {
 
         // determine email format valid before continuing pipeline
-        if (!this.emailValidator.isValid(newUser.getEmail())) {
+        if (!this.emailValidator.isValid(newUser.getEmail())) 
+        {
             model.addAttribute("emailValid", false);
-
             return "register-page";
         }
 
@@ -211,16 +136,23 @@ public class AuthenticationController {
         User registeredUser = authenticationService.signup(newUser);
 
         // send the user their verification link
-        String result = smtpService.sendVerificationLink(
-            registeredUser.getEmailVerificationSecret(), registeredUser.getEmail());
+        String result = smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(), 
+                                                            registeredUser.getEmail());
 
         return "register-page";
     }
 
     @GetMapping("/verify/{secret}")
     @ResponseBody
-    public ResponseEntity<String> verifySecret(@PathVariable String secret) {
-
+    /*  The verification link endpoint
+     *  
+     *  When a secret is sent to this endpoint, the secret verified as
+     *  being linked to an existing user. From there, the users "verified"
+     *  field is set to true. This ultimately allows the logging in of that
+     *  user from there on out.
+     */
+    public ResponseEntity<String> verifySecret(@PathVariable String secret)
+    {
         boolean verified = authenticationService.verifyEmailSecret(secret);
 
         if (!verified) {

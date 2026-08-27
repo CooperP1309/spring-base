@@ -13,7 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AuthenticationService {
+public class AuthenticationService 
+{
     private final UserRepository userRepository;
     
     private final PasswordEncoder passwordEncoder;
@@ -22,20 +23,19 @@ public class AuthenticationService {
 
     private final SecretGeneratorService secretGeneratorService;
 
-    public AuthenticationService(
-        UserRepository userRepository,
-        AuthenticationManager authenticationManager,
-        PasswordEncoder passwordEncoder,
-        SecretGeneratorService secretGeneratorService
-    ) {
+    public AuthenticationService(UserRepository userRepository,
+                                    AuthenticationManager authenticationManager,
+                                    PasswordEncoder passwordEncoder,
+                                    SecretGeneratorService secretGeneratorService) 
+    {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.secretGeneratorService = secretGeneratorService;
     }
 
-    public User signup(RegisterUserDto input) {
-        
+    public User signup(RegisterUserDto input) 
+    {    
         String verificationSecret = secretGeneratorService.generateSecureSecret();
         
         User user = new User()
@@ -48,8 +48,8 @@ public class AuthenticationService {
         return userRepository.save(user);
     }
 
-    public User setEmailAsVerified(String verifiedEmail) {
-        
+    public User setEmailAsVerified(String verifiedEmail) 
+    {    
         User verifiedUser = userRepository.findByEmail(verifiedEmail).orElseThrow();
 
         verifiedUser.setEmailVerified(true);
@@ -57,8 +57,8 @@ public class AuthenticationService {
         return userRepository.save(verifiedUser);
     }
 
-    public User setEmailAsNotVerified(String verifiedEmail) {
-        
+    public User setEmailAsNotVerified(String verifiedEmail)
+    {    
         User verifiedUser = userRepository.findByEmail(verifiedEmail).orElseThrow();
 
         verifiedUser.setEmailVerified(false);
@@ -66,20 +66,19 @@ public class AuthenticationService {
         return userRepository.save(verifiedUser);
     }
 
-    public User authenticate(LoginUserDto input) {
+    public User authenticate(LoginUserDto input)
+    {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         input.getEmail(),
-                        input.getPassword()
-                )
-        );
+                        input.getPassword()));
 
         return userRepository.findByEmail(input.getEmail())
                 .orElseThrow();
     }
 
-    public boolean verifyEmailSecret(String verificationSecret) {
-
+    public boolean verifyEmailSecret(String verificationSecret)
+    {
         Optional<User> userOpt = userRepository.findByEmailVerificationSecret(verificationSecret);
 
         if (userOpt.isEmpty()) {
@@ -92,7 +91,6 @@ public class AuthenticationService {
         try {
             userRepository.save(user);
         } catch (DataAccessException e) {
-            // error marking user as verified
             return false;
         }
 

@@ -1,24 +1,29 @@
 package com.anticipate.listr.jwt_handling.responses;
 
-public class LoginResponse {
+public class LoginResponse
+{
     private String token;
 
     private long expiresIn;
 
-    public String getToken() {
+    public String getToken() 
+    {
         return token;
     }
 
-    public LoginResponse setToken(String token) {
+    public LoginResponse setToken(String token) 
+    {
         this.token = token;
         return this;
     }
 
-    public long getExpiresIn() {
+    public long getExpiresIn() 
+    {
         return expiresIn;
     }
 
-    public LoginResponse setExpiresIn(long expiresIn) {
+    public LoginResponse setExpiresIn(long expiresIn) 
+    {
         this.expiresIn = expiresIn;
         return this;
     }

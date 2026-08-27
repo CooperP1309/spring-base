@@ -12,7 +12,8 @@ import java.util.Date;
 
 @Table(name = "users")
 @Entity
-public class User implements UserDetails {
+public class User implements UserDetails 
+{
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(nullable = false)
@@ -42,90 +43,109 @@ public class User implements UserDetails {
     private Date updatedAt;
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
+    public Collection<? extends GrantedAuthority> getAuthorities() 
+    {
         return List.of();
     }
 
-    public String getPassword() {
+    public String getPassword() 
+    {
         return password;
     }
 
-    @Override
-    public String getUsername() {
-        return email;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        // only allow login if email is verified
-        return emailVerified;
-    }
-    
-    public Integer getId() {
-        return id;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public User setFullName(String fullName) {
-        this.fullName = fullName;
-        return this;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public User setEmail(String email) {
-        this.email = email;
-        return this;
-    }
-
-    public boolean getEmailVerified() {
-        return emailVerified;
-    }
-
-    public User setEmailVerified(boolean emailVerified) {
-        this.emailVerified = emailVerified;
-        return this;
-    }
-
-    public String getEmailVerificationSecret() {
-        return emailVerificationSecret;
-    }
-
-    public User setEmailVerificationSecret(String emailVerificationSecret) {
-        this.emailVerificationSecret = emailVerificationSecret;
-        return this;
-    }
-
-    public User setPassword(String password) {
+    public User setPassword(String password) 
+    {
         this.password = password;
         return this;
     }
 
-    public Date getCreatedAt() {
+    @Override
+    public String getUsername() 
+    {
+        return email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() 
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() 
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() 
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() 
+    {
+        // only allow login if email is verified
+        return emailVerified;
+    }
+    
+    public Integer getId() 
+    {
+        return id;
+    }
+
+    public String getFullName() 
+    {
+        return fullName;
+    }
+
+    public User setFullName(String fullName) 
+    {
+        this.fullName = fullName;
+        return this;
+    }
+
+    public String getEmail() 
+    {
+        return email;
+    }
+
+    public User setEmail(String email) 
+    {
+        this.email = email;
+        return this;
+    }
+
+    public boolean getEmailVerified() 
+    {
+        return emailVerified;
+    }
+
+    public User setEmailVerified(boolean emailVerified) 
+    {
+        this.emailVerified = emailVerified;
+        return this;
+    }
+
+    public String getEmailVerificationSecret() 
+    {
+        return emailVerificationSecret;
+    }
+
+    public User setEmailVerificationSecret(String emailVerificationSecret) 
+    {
+        this.emailVerificationSecret = emailVerificationSecret;
+        return this;
+    }
+
+    public Date getCreatedAt() 
+    {
         return createdAt;
     }
 
-    public Date getUpdatedAt() {
+    public Date getUpdatedAt() 
+    {
         return updatedAt;
     }
 }

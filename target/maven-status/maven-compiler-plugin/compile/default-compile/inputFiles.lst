@@ -6,7 +6,6 @@
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/controllers/UserController.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/dtos/DeleteUserDto.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/dtos/LoginUserDto.java
-/home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/dtos/RegisterEmailDto.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/dtos/RegisterUserDto.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/entities/User.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/exceptions/GlobalExceptionHandler.java

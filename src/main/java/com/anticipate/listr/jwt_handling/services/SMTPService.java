@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-public class SMTPService {
-
+public class SMTPService 
+{
     @Value("${smtp.sender.email}")
     private String senderEmail;
 
@@ -16,11 +16,19 @@ public class SMTPService {
 
     private JavaMailSender mailSender;
 
-    public SMTPService(JavaMailSender mailSender) {
+    public SMTPService(JavaMailSender mailSender) 
+    {
         this.mailSender = mailSender;
     }
 
-    public String sendVerificationLink(String verificationCode, String receivingEmail) {
+    /*  Wrapper function for sendEmail()
+     *
+     *  This function wraps sendEmail() with the intention of
+     *  building a body and subject specific to sending verification
+     *  links. 
+     */
+    public String sendVerificationLink(String verificationCode, String receivingEmail) 
+    {
         
         String verificationLink = "http://localhost:8005/auth/verify/" + verificationCode;
 
@@ -34,7 +42,14 @@ public class SMTPService {
         return sendEmail(subject, body, receivingEmail);
     }
 
-    public String sendEmail(String subject, String body, String receivingEmail) {
+    /*  Core email sending unit.
+     *
+     *  This is core interface for sending emails. It relies
+     *  on SimpleMailMessage and thus email formatting is very
+     *  limited.
+     */
+    public String sendEmail(String subject, String body, String receivingEmail) 
+    {
                 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(this.senderEmail);
@@ -42,13 +57,14 @@ public class SMTPService {
         message.setSubject(subject);
         message.setText(body);
 
-        try {
+        try 
+        {
             mailSender.send(message);
-            
             return "Success"; 
-        } catch (Exception ex) {
-            System.out.println("Failed to send: " + ex.getMessage());
-            
+        }
+        catch (Exception ex) 
+        {
+            System.out.println("Failed to send: " + ex.getMessage());    
             return "Failure";
         }
     }
