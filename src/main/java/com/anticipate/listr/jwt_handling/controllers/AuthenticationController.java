@@ -104,6 +104,22 @@ public class AuthenticationController {
     @PostMapping("/test-register")
     public String test_register(@ModelAttribute("user") LoginUserDto newUser) {
 
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         System.out.println("\nRegistered email:" + newUser.getEmail() + "\nPassword: " + newUser.getPassword() + "\n");
 
         //boolean emailValid = validator.isValid(registerEmailDto.getEmail());
