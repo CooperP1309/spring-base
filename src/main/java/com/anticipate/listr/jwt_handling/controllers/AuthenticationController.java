@@ -34,6 +34,8 @@ public class AuthenticationController {
 
     private JavaMailSender mailSender;
 
+    private EmailValidator emailValidator;
+
     private final JwtService jwtService;
     
     private final AuthenticationService authenticationService;
@@ -42,6 +44,7 @@ public class AuthenticationController {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
         this.mailSender = mailSender;
+        this.emailValidator = EmailValidator.getInstance();
     }
 
     @PostMapping("/signup")
@@ -101,9 +104,16 @@ public class AuthenticationController {
     @PostMapping("/test-register")
     public String test_register(@ModelAttribute("user") LoginUserDto newUser) {
 
-        System.out.println("\nRegistered email:" + newUser.getEmail() + "\nI shouldn't know this: " + newUser.getPassword() + "\n");
+        System.out.println("\nRegistered email:" + newUser.getEmail() + "\nPassword: " + newUser.getPassword() + "\n");
 
-        newUser.setEmailValid(true);
+        //boolean emailValid = validator.isValid(registerEmailDto.getEmail());
+
+        if (this.emailValidator.isValid(newUser.getEmail())) {
+            newUser.setEmailValid(true);
+        }
+        else {
+            newUser.setEmailValid(false);
+        }
 
         return "register-page";
     }
