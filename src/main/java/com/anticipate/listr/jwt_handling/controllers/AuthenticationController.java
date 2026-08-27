@@ -181,7 +181,6 @@ public class AuthenticationController {
         return "login-page";
     }
     
-    
     @GetMapping("/register-page")
     public String register_page(Model model) {
 
@@ -214,10 +213,24 @@ public class AuthenticationController {
         // add user to db
         User registeredUser = authenticationService.signup(newUser);
 
-        System.out.println("\nRegistered user: " + registeredUser.getFullName()
-                + "\nEmail: " + registeredUser.getEmail() + "\n");
+        System.out.println("\nRegistered user: " + registeredUser.getEmail()
+                + "\nVerification Link: 'http://localhost:8005/auth/verify/" + registeredUser.getEmailVerificationSecret() + "'\n");
 
         return "register-page";
     }
 
+    @GetMapping("/verify/{secret}")
+    @ResponseBody
+    public ResponseEntity<String> verifySecret(@PathVariable String secret) {
+
+        boolean verified = authenticationService.verifyEmailSecret(secret);
+
+        if (!verified) {
+            return ResponseEntity
+                    .status(HttpStatus.GONE)
+                    .body("This verification link is invalid or has expired.");
+        }
+
+        return ResponseEntity.ok("Email has been verified.");
+    }
 }

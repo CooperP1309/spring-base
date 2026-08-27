@@ -4,3 +4,5 @@ HIGH PRIORITY
  - Automate the configuration of SMTP server setup (properties write to application.properties)
  
  - Remove UserRepository from AuthController. Should only be interfaced via Auth..Service
+
+ - Remove hardcoding of localhost from generated verification link (add app.properties variable)
