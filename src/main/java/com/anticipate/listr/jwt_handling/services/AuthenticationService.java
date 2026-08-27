@@ -5,6 +5,8 @@ import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.services.SecretGeneratorService;
+import java.util.Optional;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -74,6 +76,27 @@ public class AuthenticationService {
 
         return userRepository.findByEmail(input.getEmail())
                 .orElseThrow();
+    }
+
+    public boolean verifyEmailSecret(String verificationSecret) {
+
+        Optional<User> userOpt = userRepository.findByEmailVerificationSecret(verificationSecret);
+
+        if (userOpt.isEmpty()) {
+            return false;
+        }
+
+        User user = userOpt.get();
+        user.setEmailVerified(true);
+
+        try {
+            userRepository.save(user);
+        } catch (DataAccessException e) {
+            // error marking user as verified
+            return false;
+        }
+
+        return true;
     }
 
 

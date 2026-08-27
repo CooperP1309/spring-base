@@ -17,7 +17,8 @@ public class SecretGeneratorService {
         // Populate the array with cryptographically secure random bytes
         secureRandom.nextBytes(randomBytes);
         
-        // Encode to a safe, readable String representation
-        return Base64.getEncoder().encodeToString(randomBytes);
+        // Encode using the URL-safe Base64 alphabet ('-' and '_' instead of '+' and '/')
+        // and drop '=' padding so the secret is safe to use directly in a URL path segment
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
 }
