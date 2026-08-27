@@ -27,6 +27,12 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
+    private boolean emailVerified;
+
+    @Column(nullable = false)
+    private String emailVerificationSecret;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private Date createdAt;
@@ -66,6 +72,8 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
+        // only allow login if email is verified
+        //return emailVerified;
         return true;
     }
     
@@ -88,6 +96,24 @@ public class User implements UserDetails {
 
     public User setEmail(String email) {
         this.email = email;
+        return this;
+    }
+
+    public boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public User setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+        return this;
+    }
+
+    public String getEmailVerificationSecret() {
+        return emailVerificationSecret;
+    }
+
+    public User setEmailVerificationSecret(String emailVerificationSecret) {
+        this.emailVerificationSecret = emailVerificationSecret;
         return this;
     }
 
