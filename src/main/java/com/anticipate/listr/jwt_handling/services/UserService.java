@@ -10,14 +10,17 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
-public class UserService {
+public class UserService 
+{
     private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository)
+    {
         this.userRepository = userRepository;
     }
 
-    public List<User> allUsers() {
+    public List<User> allUsers() 
+    {
         List<User> users = new ArrayList<>();
 
         userRepository.findAll().forEach(users::add);
@@ -26,7 +29,8 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteByEmail(String email) {
+    public void deleteByEmail(String email) 
+    {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException("No user found with email: " + email));
 
