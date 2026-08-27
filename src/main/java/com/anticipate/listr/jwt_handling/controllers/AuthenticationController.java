@@ -173,6 +173,15 @@ public class AuthenticationController {
     }
 
     // PROTOTYPE ENDPOINTS
+    @GetMapping("/login-page")
+    public String login_page(Model model) {
+
+        model.addAttribute("user", new LoginUserDto());
+
+        return "login-page";
+    }
+    
+    
     @GetMapping("/register-page")
     public String register_page(Model model) {
 
