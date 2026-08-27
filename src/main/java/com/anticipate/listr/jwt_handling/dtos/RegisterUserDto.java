@@ -9,6 +9,8 @@ public class RegisterUserDto {
 
     private boolean emailVerified;
 
+    private boolean emailValid;
+
     public String getEmail() {
         return email;
     }
@@ -43,5 +45,23 @@ public class RegisterUserDto {
     public RegisterUserDto setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
         return this;
+    }
+
+    public boolean getEmailValid() {
+        return emailValid;
+    }
+
+    public RegisterUserDto setEmailValid(boolean emailValid) {
+        this.emailValid = emailValid;
+        return this;
+    }
+
+    public RegisterUserDto() {
+    }
+
+    public RegisterUserDto(String email, String fullName, String password) {
+        this.email = email;
+        this.fullName = fullName;
+        this.password = password;
     }
 }

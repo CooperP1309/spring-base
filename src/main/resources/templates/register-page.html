@@ -18,6 +18,12 @@
                     <!-- Registration Form -->
                     <form th:action="@{/auth/test-register}" th:object="${user}" method="post">
 
+                        <!-- Full Name Field -->
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label">Full Name</label>
+                            <input type="text" id="fullName" th:field="*{fullName}" class="form-control" placeholder="Jane Doe" required />
+                        </div>
+
                         <!-- Email Field -->
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>

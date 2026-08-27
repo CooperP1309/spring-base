@@ -185,7 +185,7 @@ public class AuthenticationController {
     @GetMapping("/register-page")
     public String register_page(Model model) {
 
-        model.addAttribute("user", new LoginUserDto());
+        model.addAttribute("user", new RegisterUserDto());
 
         return "register-page";
     }
@@ -200,7 +200,7 @@ public class AuthenticationController {
     *   A new user is registered and the verification email pipeline
     *   is initiated.
     */
-    public String test_register(@ModelAttribute("user") LoginUserDto newUser) {
+    public String test_register(@ModelAttribute("user") RegisterUserDto newUser) {
 
         // determine email format valid before continuing pipeline
         if (!this.emailValidator.isValid(newUser.getEmail())) {
@@ -212,19 +212,10 @@ public class AuthenticationController {
         newUser.setEmailValid(true);
 
         // add user to db
+        User registeredUser = authenticationService.signup(newUser);
 
-
-
-        System.out.println("\nRegistered email:" + newUser.getEmail() + "\nPassword: " + newUser.getPassword() + "\n");
-
-        //boolean emailValid = validator.isValid(registerEmailDto.getEmail());
-
-        if (this.emailValidator.isValid(newUser.getEmail())) {
-            newUser.setEmailValid(true);
-        }
-        else {
-            newUser.setEmailValid(false);
-        }
+        System.out.println("\nRegistered user: " + registeredUser.getFullName()
+                + "\nEmail: " + registeredUser.getEmail() + "\n");
 
         return "register-page";
     }
