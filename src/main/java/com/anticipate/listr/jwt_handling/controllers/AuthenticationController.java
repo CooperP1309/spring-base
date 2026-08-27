@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.stereotype.Controller;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.apache.commons.validator.routines.EmailValidator;
 
 @RequestMapping("/auth")
 @Controller
@@ -82,7 +83,11 @@ public class AuthenticationController {
         mailSender.send(message);
         */
 
-        return "You passed the following email: '" + registerEmailDto.getEmail() + "'";
+        EmailValidator validator = EmailValidator.getInstance();
+
+        boolean emailValid = validator.isValid(registerEmailDto.getEmail());
+
+        return "The following email: '" + registerEmailDto.getEmail() + "' has validity: " + emailValid;
     }
 
     @GetMapping("/register-page")
