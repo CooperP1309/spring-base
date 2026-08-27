@@ -113,6 +113,42 @@ public class AuthenticationController {
         return "Email '" + newUser.getEmail() + "' verified = " + newUser.getEmailVerified();
     }    
 
+    @PostMapping("/set-emailVerification")
+    @ResponseBody
+    public String set_emailVerification(@RequestBody RegisterEmailDto registerEmailDto) {
+
+        authenticationService.setEmailAsVerified(registerEmailDto.getEmail());
+
+        return "Email '" + registerEmailDto.getEmail() + "' verified";
+    }
+
+    @PostMapping("/unset-emailVerification")
+    @ResponseBody
+    public String unset_emailVerification(@RequestBody RegisterEmailDto registerEmailDto) {
+
+        authenticationService.setEmailAsNotVerified(registerEmailDto.getEmail());
+
+        return "Email '" + registerEmailDto.getEmail() + "' verified";
+    }
+
+    @PostMapping("/generate-secret")
+    @ResponseBody
+    public String generate_secret(@RequestBody RegisterEmailDto registerEmailDto) {
+
+        return authenticationService.generateSecret();
+    }
+
+    @PostMapping("/test-secret")
+    @ResponseBody
+    public String test_email_secret(@RequestBody RegisterEmailDto registerEmailDto) {
+
+        User newUser = userRepository.findByEmail(registerEmailDto.getEmail()).orElseThrow();
+
+        String secret = newUser.getEmailVerificationSecret();
+
+        return "secret for '" + newUser.getEmail() + "' = " + secret;
+    }
+
     // PROTOTYPE ENDPOINTS
     @GetMapping("/register-page")
     public String register_page(Model model) {

@@ -30,6 +30,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean emailVerified;
 
+    @Column(nullable = false)
+    private String emailVerificationSecret;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private Date createdAt;
@@ -102,6 +105,15 @@ public class User implements UserDetails {
 
     public User setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
+        return this;
+    }
+
+    public String getEmailVerificationSecret() {
+        return emailVerificationSecret;
+    }
+
+    public User setEmailVerificationSecret(String emailVerificationSecret) {
+        this.emailVerificationSecret = emailVerificationSecret;
         return this;
     }
 

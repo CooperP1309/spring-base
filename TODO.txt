@@ -1,3 +1,5 @@
 HIGH PRIORITY
+ - Ensure Email Verification Secret generated doesn't already exist
+ 
  - Automate the configuration of SMTP server setup (properties write to application.properties)
  
