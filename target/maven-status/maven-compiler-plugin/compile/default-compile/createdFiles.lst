@@ -1,4 +1,3 @@
 com/anticipate/listr/jwt_handling/services/SMTPService.class
 com/anticipate/listr/jwt_handling/services/SecretGeneratorService.class
-com/anticipate/listr/jwt_handling/dtos/RegisterEmailDto.class
 com/anticipate/listr/jwt_handling/dtos/DeleteUserDto.class
