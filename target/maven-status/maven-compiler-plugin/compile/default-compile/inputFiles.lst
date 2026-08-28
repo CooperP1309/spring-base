@@ -2,6 +2,7 @@
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/configs/ApplicationConfiguration.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/configs/JwtAuthenticationFilter.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/configs/SecurityConfiguration.java
+/home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/controllers/AdminController.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/controllers/AuthenticationController.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/controllers/UserController.java
 /home/cooperp/projects/spring-base/src/main/java/com/anticipate/listr/jwt_handling/dtos/DeleteUserDto.java

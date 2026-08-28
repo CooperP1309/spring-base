@@ -28,6 +28,14 @@ public class UserService
         return users;
     }
 
+    public void deleteUser(Integer userID) 
+    {
+        User user = userRepository.findById(userID)
+                .orElseThrow(() -> new NoSuchElementException("No user found with ID: " + userID));
+        
+        userRepository.delete(user);
+    }
+
     @Transactional
     public void deleteByEmail(String email) 
     {

@@ -48,7 +48,6 @@ public class AuthenticationController
                                     UserRepository userRepository,
                                     SMTPService smtpService) 
     {
-
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
         this.emailValidator = EmailValidator.getInstance();
