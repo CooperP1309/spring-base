@@ -51,7 +51,8 @@ public class AdminController
     /*  Retrieves all users
      *
      *  This endpoint interafaces with the user repository
-     *  to return a json body of all users in the system.
+     *  through the UserService module to return a json body 
+     *  of all users in the system.
      */
     public ResponseEntity<List<User>> getAllUsers()
     {
@@ -61,10 +62,29 @@ public class AdminController
     }
 
     @DeleteMapping("/delete-user/{userID}")
+    /*  Deletes a user by ID
+     *
+     *  This endpoint interafaces with the user repository
+     *  through the UserService module to delete a user by
+     *  their ID.
+     */
     public ResponseEntity<Void> deleteUser(@PathVariable Integer userID)
     {
         userService.deleteUser(userID);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/dashboard")
+    /*  Returns the admin dashboard
+     *  
+     *  Returns the html/web UI for graphically managing the
+     *  system. This interfaces with all of the AdminController
+     *  endpoints.
+     */
+    public String getDashboard()
+    {
+
+        return "admin-page";
     }
 }
