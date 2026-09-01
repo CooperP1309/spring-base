@@ -4,6 +4,7 @@ import org.springframework.stereotype.Controller;
 import com.anticipate.listr.jwt_handling.dtos.DeleteUserDto;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.services.UserService;
+import com.anticipate.listr.jwt_handling.services.JwtService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -13,6 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+
 
 import java.util.List;
 
@@ -22,9 +26,13 @@ public class HomeController
 {
     private final UserService userService;
 
-    public HomeController(UserService userService) 
+    private final JwtService jwtService;
+
+    public HomeController(UserService userService,
+                            JwtService jwtService) 
     {
         this.userService = userService;
+        this.jwtService = jwtService;
     }
     
     @GetMapping("/")
@@ -71,10 +79,17 @@ public class HomeController
      *  Only if a user is authenticated, does this page return
      *   a personalized home page with the user's information.
      */
-    public String showHomePage() 
+    public String showHomePage(Model model) 
     {
-        return "home-page";
-    }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken))
+        {    
+            model.addAttribute("username", authentication.getName());
+        }
+
+        return "home-page";
+    }    
 }

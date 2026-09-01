@@ -2,8 +2,6 @@ HIGH PRIORITY
 [ ] Admin Portal
 
 [ ] Ensure Email Verification Secret generated doesn't already exist
- 
-[ ] Remove UserRepository from AuthController. Should only be interfaced via Auth..Service
 
 [ ] Remove hardcoding of localhost from generated verification link (add app.properties variable)
 
