@@ -2,6 +2,7 @@ package com.anticipate.listr.jwt_handling.services;
 
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
+import com.anticipate.listr.jwt_handling.entities.Role;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.services.SecretGeneratorService;
@@ -37,8 +38,6 @@ public class AuthenticationService
         this.secretGeneratorService = secretGeneratorService;
 
         // Ensure admin exists in the database
-        System.out.println("\nChecking for admin user in the database...");
-
         if (!adminEmail.isBlank() && !adminPassword.isBlank()) {
             
             Optional<User> adminOpt = userRepository.findByEmail(adminEmail);
@@ -47,11 +46,11 @@ public class AuthenticationService
                         .setFullName("Admin")
                         .setEmail(adminEmail)
                         .setPassword(passwordEncoder.encode(adminPassword))
-                        .setEmailVerified(true);
+                        .setEmailVerified(true)
+                        .setRole(Role.ADMIN);
                 userRepository.save(admin);
-
-                System.out.println("Admin user created with email: " + adminEmail);
             }
+            System.out.println("\n[AuthenticationService] adminEmail: " + adminEmail + "\n");
         }
     }
 
@@ -64,7 +63,8 @@ public class AuthenticationService
                 .setEmail(input.getEmail())
                 .setPassword(passwordEncoder.encode(input.getPassword()))
                 .setEmailVerified(false)
-                .setEmailVerificationSecret(verificationSecret);
+                .setEmailVerificationSecret(verificationSecret)
+                .setRole(Role.USER);
 
         return userRepository.save(user);
     }
