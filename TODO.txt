@@ -1,4 +1,8 @@
 HIGH PRIORITY
+[ ] Remove admin credentials from startup logs
+
+[ ] Setup admin credentials in setup scripts
+
 [ ] Admin Portal
 
 [ ] Ensure Email Verification Secret generated doesn't already exist
@@ -11,7 +15,13 @@ HIGH PRIORITY
 
 [ ] Automate the configuration of SMTP server setup (properties write to application.properties)
 
+[ ] Minimum password requirements enforced
+
  LOW PRIORITY
+[ ] Abstract admin-page inline js to its own static file
+
 [X] Remove EmailValid bool from RegisterUserDto
 
 [ ] Fix log chains for user not enabled, duplicate email, invalid session token...
+
+[ ] Refactoor "JWT SEssion habdling" to authentication/

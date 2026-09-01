@@ -31,7 +31,7 @@ public class User implements UserDetails
     @Column(nullable = false)
     private boolean emailVerified;
 
-    @Column(nullable = false)
+    @Column
     private String emailVerificationSecret;
 
     @CreationTimestamp

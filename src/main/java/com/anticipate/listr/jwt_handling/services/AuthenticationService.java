@@ -6,6 +6,7 @@ import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.services.SecretGeneratorService;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,12 +27,32 @@ public class AuthenticationService
     public AuthenticationService(UserRepository userRepository,
                                     AuthenticationManager authenticationManager,
                                     PasswordEncoder passwordEncoder,
-                                    SecretGeneratorService secretGeneratorService) 
+                                    SecretGeneratorService secretGeneratorService,
+                                    @Value("${admin.email:}") String adminEmail,
+                                    @Value("${admin.password:}") String adminPassword)
     {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.secretGeneratorService = secretGeneratorService;
+
+        // Ensure admin exists in the database
+        System.out.println("\nChecking for admin user in the database...");
+
+        if (!adminEmail.isBlank() && !adminPassword.isBlank()) {
+            
+            Optional<User> adminOpt = userRepository.findByEmail(adminEmail);
+            if (adminOpt.isEmpty()) {
+                User admin = new User()
+                        .setFullName("Admin")
+                        .setEmail(adminEmail)
+                        .setPassword(passwordEncoder.encode(adminPassword))
+                        .setEmailVerified(true);
+                userRepository.save(admin);
+
+                System.out.println("Admin user created with email: " + adminEmail);
+            }
+        }
     }
 
     public User signup(RegisterUserDto input) 
