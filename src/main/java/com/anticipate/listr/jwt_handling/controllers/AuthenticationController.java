@@ -186,6 +186,7 @@ public class AuthenticationController
      */
     public ResponseEntity<Void> setAccountEnabled(@RequestBody SetAccountEnabledDto input)
     {
+        
         if (input.isEnabled()) {
             authenticationService.setEmailAsVerified(input.getEmail());
         } else {

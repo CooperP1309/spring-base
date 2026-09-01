@@ -82,6 +82,11 @@ public class AuthenticationService
     {    
         User verifiedUser = userRepository.findByEmail(verifiedEmail).orElseThrow();
 
+        if (verifiedUser.getRole() == Role.ADMIN)
+        {
+            return verifiedUser;
+        }
+
         verifiedUser.setEmailVerified(false);
 
         return userRepository.save(verifiedUser);

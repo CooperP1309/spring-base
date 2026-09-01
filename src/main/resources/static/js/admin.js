@@ -48,15 +48,18 @@
 
         const actionTd = document.createElement('td');
 
-        const toggleBtn = document.createElement('button');
-        toggleBtn.textContent = user.emailVerified ? 'Disable account' : 'Enable account';
-        toggleBtn.addEventListener('click', () => setAccountEnabled(user.email, !user.emailVerified));
-        actionTd.appendChild(toggleBtn);
+        // Admin accounts can't be managed from the dashboard.
+        if (user.role !== 'ADMIN') {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.textContent = user.emailVerified ? 'Disable account' : 'Enable account';
+            toggleBtn.addEventListener('click', () => setAccountEnabled(user.email, !user.emailVerified));
+            actionTd.appendChild(toggleBtn);
 
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'Delete';
-        deleteBtn.addEventListener('click', () => deleteUser(user.id));
-        actionTd.appendChild(deleteBtn);
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => deleteUser(user.id));
+            actionTd.appendChild(deleteBtn);
+        }
 
         tr.appendChild(actionTd);
 
