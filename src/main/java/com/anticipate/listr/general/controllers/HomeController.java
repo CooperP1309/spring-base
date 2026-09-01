@@ -39,8 +39,11 @@ public class HomeController
         // check is user is authenticated
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        // when no token is recieved, an anonymous token is created
-        // thus we need to verifiy that the token is not anonymouse too
+        /*
+         *  when no token is recieved, getAuthentication() returns an 
+         *  instance of AnonymousAuthenticationToken.
+         *  Thus we need to verifiy that the token is not anonymouse too
+         */
         if (authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken))
