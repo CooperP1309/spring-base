@@ -33,8 +33,7 @@ public class SecurityConfiguration {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/js/**", "/css/**", "/images/**", "/webjars/**", "/favicon.ico").permitAll()
-                .requestMatchers("/auth/**","/admin/**", "/", "/landing-page").permitAll()
+                .requestMatchers("/auth/**","/admin/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

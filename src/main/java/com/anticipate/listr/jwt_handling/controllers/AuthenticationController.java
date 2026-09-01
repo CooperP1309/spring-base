@@ -12,9 +12,7 @@ import com.anticipate.listr.jwt_handling.services.SMTPService;
 
 /* ===== spring libs ===== */
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import com.anticipate.listr.jwt_handling.configs.JwtCookie;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -71,16 +69,7 @@ public class AuthenticationController
 
         LoginResponse loginResponse = new LoginResponse().setToken(jwtToken).setExpiresIn(jwtService.getExpirationTime());
 
-        System.out.println("Login Response: " + loginResponse.getToken() + " Expires in: " + loginResponse.getExpiresIn());
-
-        // Set the token as an HttpOnly cookie so browser navigations to
-        // server-rendered pages (e.g. /home-page) carry it automatically.
-        // The token stays in the body too for pure API clients.
-        String cookie = JwtCookie.create(jwtToken, jwtService.getExpirationTime()).toString();
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie)
-                .body(loginResponse);
+        return ResponseEntity.ok(loginResponse);
     }
 
     @GetMapping("/login-page")
