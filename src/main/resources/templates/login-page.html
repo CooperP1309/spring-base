@@ -3,15 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
-
-    <!-- Source the JS for handling login functionality -->
-    <script th:src="@{/js/login.js}" defer></script>
 </head>
 <body>
 
-<form id="loginForm"
-      th:data-login-url="@{/auth/login}"
-      th:data-register-url="@{/auth/register-page}">
+<form id="loginForm">
     <label for="email">Email</label>
     <input type="email" id="email" name="email" required />
 
@@ -24,6 +19,51 @@
 <button type="button" id="signupBtn">Sign Up</button>
 
 <p id="status"></p>
+
+<script th:inline="javascript">
+    const loginUrl = /*[[@{/auth/login}]]*/ '/auth/login';
+    const registerUrl = /*[[@{/auth/register-page}]]*/ '/auth/register-page';
+
+    const statusEl = document.getElementById('status');
+
+    document.getElementById('signupBtn').addEventListener('click', () => {
+        window.location.href = registerUrl;
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        statusEl.textContent = 'Logging in...';
+
+        const payload = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        };
+
+        try {
+            const res = await fetch(loginUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const text = await res.text();
+            console.log('login response', res.status, text);
+
+            if (!res.ok) {
+                statusEl.textContent = 'Login failed (' + res.status + '): ' + text;
+                return;
+            }
+
+            const data = JSON.parse(text);
+            localStorage.setItem('token', data.token);
+            statusEl.textContent = 'Logged in. Token stored.';
+            // window.location.href = '/';
+        } catch (err) {
+            statusEl.textContent = 'Error: ' + err;
+            console.error(err);
+        }
+    });
+</script>
 
 </body>
 </html>
