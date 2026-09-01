@@ -88,6 +88,7 @@ public class HomeController
                 && !(authentication instanceof AnonymousAuthenticationToken))
         {    
             model.addAttribute("username", authentication.getName());
+            model.addAttribute("role", authentication.getAuthorities().toString());
         }
 
         return "home-page";
