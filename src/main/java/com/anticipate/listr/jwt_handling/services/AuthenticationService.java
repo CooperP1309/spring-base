@@ -38,10 +38,11 @@ public class AuthenticationService
         this.secretGeneratorService = secretGeneratorService;
 
         // Ensure admin exists in the database
-        if (!adminEmail.isBlank() && !adminPassword.isBlank()) {
-            
+        if (!adminEmail.isBlank() && !adminPassword.isBlank()) 
+        {
             Optional<User> adminOpt = userRepository.findByEmail(adminEmail);
-            if (adminOpt.isEmpty()) {
+            if (adminOpt.isEmpty()) 
+            {
                 User admin = new User()
                         .setFullName("Admin")
                         .setEmail(adminEmail)
@@ -50,7 +51,6 @@ public class AuthenticationService
                         .setRole(Role.ADMIN);
                 userRepository.save(admin);
             }
-            System.out.println("\n[AuthenticationService] adminEmail: " + adminEmail + "\n");
         }
     }
 

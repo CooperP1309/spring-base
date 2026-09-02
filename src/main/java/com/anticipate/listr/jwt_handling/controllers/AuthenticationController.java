@@ -72,11 +72,6 @@ public class AuthenticationController
 
         LoginResponse loginResponse = new LoginResponse().setToken(jwtToken).setExpiresIn(jwtService.getExpirationTime());
 
-        System.out.println("Login Response: " + loginResponse.getToken() + " Expires in: " + loginResponse.getExpiresIn());
-
-        // Set the token as an HttpOnly cookie so browser navigations to
-        // server-rendered pages (e.g. /home-page) carry it automatically.
-        // The token stays in the body too for pure API clients.
         String cookie = JwtCookie.create(jwtToken, jwtService.getExpirationTime()).toString();
 
         return ResponseEntity.ok()

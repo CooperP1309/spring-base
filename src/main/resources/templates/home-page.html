@@ -11,35 +11,22 @@
     <h1 th:text="${username != null} ? |Welcome back, ${username}| : 'Welcome back'">Welcome back</h1>
     <p>This is a super simple website built with basic HTML. And yes, this isn't the landing page.</p>
 
-    <p>Your role: </p>
-    <h1 th:text="${role}">Role</h1>
-
-    <div class="box-pattern" th:classappend="${role == '[ROLE_ADMIN]'} ? 'text-danger'">
-        YOU ARE AN ADMIN
-    </div>
-
-    <div class="box-pattern" th:classappend="${role == '[ROLE_USER]'} ? 'text-danger'">
-        YOU ARE A USER
-    </div>
-
     <div sec:authorize="hasRole('ADMIN')">
-    <hr>
-    <p> <!-- add a point to /leaders... for the manager role-->
-        <a th:href="@{/leaders}">Admin Meeting</a>
-        (Only for manager admins)
-    </p>
-    <hr>
+        <hr>
+            <p>
+                <a th:href="@{/admin/dashboard}">Admin Dashboard</a>
+            </p>
+        <hr>
     </div>
 
     <div sec:authorize="hasRole('USER')">
-    <hr>
-    <p> <!-- add a point to /leaders... for the manager role-->
-        <a th:href="@{/leaders}">USERS Meeting</a>
-        (Only for standard users)
-    </p>
-    <hr>
+        <hr>
+            <p> <!-- add a point to /leaders... for the manager role-->
+                <a th:href="@{/users/me}">USERS Meeting</a>
+                (Only for standard users)
+            </p>
+        <hr>
     </div>
-
 
 </body>
 </html>
