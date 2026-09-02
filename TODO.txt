@@ -1,9 +1,9 @@
 HIGH PRIORITY
-[ ] Remove admin credentials from startup logs
+[X] Remove admin credentials from startup logs
+
+[X] Admin Portal
 
 [ ] Setup admin credentials in setup scripts
-
-[ ] Admin Portal
 
 [ ] Ensure Email Verification Secret generated doesn't already exist
 
