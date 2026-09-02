@@ -2,10 +2,12 @@ package com.anticipate.listr.jwt_handling.services;
 
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
+import com.anticipate.listr.jwt_handling.entities.Role;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.services.SecretGeneratorService;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,12 +28,30 @@ public class AuthenticationService
     public AuthenticationService(UserRepository userRepository,
                                     AuthenticationManager authenticationManager,
                                     PasswordEncoder passwordEncoder,
-                                    SecretGeneratorService secretGeneratorService) 
+                                    SecretGeneratorService secretGeneratorService,
+                                    @Value("${admin.email:}") String adminEmail,
+                                    @Value("${admin.password:}") String adminPassword)
     {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.secretGeneratorService = secretGeneratorService;
+
+        // Ensure admin exists in the database
+        if (!adminEmail.isBlank() && !adminPassword.isBlank()) 
+        {
+            Optional<User> adminOpt = userRepository.findByEmail(adminEmail);
+            if (adminOpt.isEmpty()) 
+            {
+                User admin = new User()
+                        .setFullName("Admin")
+                        .setEmail(adminEmail)
+                        .setPassword(passwordEncoder.encode(adminPassword))
+                        .setEmailVerified(true)
+                        .setRole(Role.ADMIN);
+                userRepository.save(admin);
+            }
+        }
     }
 
     public User signup(RegisterUserDto input) 
@@ -43,7 +63,8 @@ public class AuthenticationService
                 .setEmail(input.getEmail())
                 .setPassword(passwordEncoder.encode(input.getPassword()))
                 .setEmailVerified(false)
-                .setEmailVerificationSecret(verificationSecret);
+                .setEmailVerificationSecret(verificationSecret)
+                .setRole(Role.USER);
 
         return userRepository.save(user);
     }
@@ -60,6 +81,11 @@ public class AuthenticationService
     public User setEmailAsNotVerified(String verifiedEmail)
     {    
         User verifiedUser = userRepository.findByEmail(verifiedEmail).orElseThrow();
+
+        if (verifiedUser.getRole() == Role.ADMIN)
+        {
+            return verifiedUser;
+        }
 
         verifiedUser.setEmailVerified(false);
 

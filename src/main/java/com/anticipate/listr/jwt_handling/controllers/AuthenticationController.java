@@ -4,6 +4,7 @@ package com.anticipate.listr.jwt_handling.controllers;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
+import com.anticipate.listr.jwt_handling.dtos.SetAccountEnabledDto;
 import com.anticipate.listr.jwt_handling.responses.LoginResponse;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
@@ -71,11 +72,6 @@ public class AuthenticationController
 
         LoginResponse loginResponse = new LoginResponse().setToken(jwtToken).setExpiresIn(jwtService.getExpirationTime());
 
-        System.out.println("Login Response: " + loginResponse.getToken() + " Expires in: " + loginResponse.getExpiresIn());
-
-        // Set the token as an HttpOnly cookie so browser navigations to
-        // server-rendered pages (e.g. /home-page) carry it automatically.
-        // The token stays in the body too for pure API clients.
         String cookie = JwtCookie.create(jwtToken, jwtService.getExpirationTime()).toString();
 
         return ResponseEntity.ok()
@@ -172,5 +168,26 @@ public class AuthenticationController
         }
 
         return ResponseEntity.ok("Email has been verified.");
+    }
+
+    @PostMapping("/set-account-enabled")
+    @ResponseBody
+    /*  Enables or disables a user account
+     *
+     *  A user account is considered "enabled" once its email is
+     *  verified (see User.isEnabled()). This endpoint lets an admin
+     *  flip that flag directly from the dashboard, toggling the
+     *  target user's ability to log in.
+     */
+    public ResponseEntity<Void> setAccountEnabled(@RequestBody SetAccountEnabledDto input)
+    {
+        
+        if (input.isEnabled()) {
+            authenticationService.setEmailAsVerified(input.getEmail());
+        } else {
+            authenticationService.setEmailAsNotVerified(input.getEmail());
+        }
+
+        return ResponseEntity.noContent().build();
     }
 }

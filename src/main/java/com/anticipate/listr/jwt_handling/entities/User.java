@@ -2,10 +2,12 @@ package com.anticipate.listr.jwt_handling.entities;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.List;
 
 import java.util.Date;
@@ -31,7 +33,12 @@ public class User implements UserDetails
     @Column(nullable = false)
     private boolean emailVerified;
 
-    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @ColumnDefault("'USER'")
+    private Role role = Role.USER;
+
+    @Column
     private String emailVerificationSecret;
 
     @CreationTimestamp
@@ -43,9 +50,9 @@ public class User implements UserDetails
     private Date updatedAt;
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() 
+    public Collection<? extends GrantedAuthority> getAuthorities()
     {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     public String getPassword() 
@@ -128,7 +135,18 @@ public class User implements UserDetails
         return this;
     }
 
-    public String getEmailVerificationSecret() 
+    public Role getRole()
+    {
+        return role;
+    }
+
+    public User setRole(Role role)
+    {
+        this.role = role;
+        return this;
+    }
+
+    public String getEmailVerificationSecret()
     {
         return emailVerificationSecret;
     }

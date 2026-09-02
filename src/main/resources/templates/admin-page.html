@@ -3,10 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Dashboard</title>
+
+    <!-- Source the JS for handling admin dashboard functionality -->
+    <script th:src="@{/js/admin.js}" defer></script>
 </head>
 <body>
 
 <h1>Admin Dashboard</h1>
+
+<div id="adminConfig"
+     th:data-get-users-url="@{/admin/get-users}"
+     th:data-delete-user-url="@{/admin/delete-user}"
+     th:data-set-account-enabled-url="@{/auth/set-account-enabled}">
+</div>
 
 <button type="button" id="refreshBtn">Refresh users</button>
 <p id="status"></p>
@@ -17,6 +26,7 @@
             <th>ID</th>
             <th>Full name</th>
             <th>Email</th>
+            <th>Role</th>
             <th>Verified</th>
             <th>Created</th>
             <th></th>
@@ -24,85 +34,6 @@
     </thead>
     <tbody id="userRows"></tbody>
 </table>
-
-<script th:inline="javascript">
-    const getUsersUrl = /*[[@{/admin/get-users}]]*/ '/admin/get-users';
-    const deleteUserUrl = /*[[@{/admin/delete-user}]]*/ '/admin/delete-user';
-
-    const statusEl = document.getElementById('status');
-    const rowsEl = document.getElementById('userRows');
-
-    function authHeaders() {
-        const token = localStorage.getItem('token');
-        return token ? { 'Authorization': 'Bearer ' + token } : {};
-    }
-
-    async function loadUsers() {
-        statusEl.textContent = 'Loading...';
-        rowsEl.innerHTML = '';
-
-        try {
-            const res = await fetch(getUsersUrl, { headers: authHeaders() });
-
-            if (!res.ok) {
-                statusEl.textContent = 'Failed to load users (' + res.status + ')';
-                return;
-            }
-
-            const users = await res.json();
-            users.forEach(renderRow);
-            statusEl.textContent = users.length + ' user(s)';
-        } catch (err) {
-            statusEl.textContent = 'Error: ' + err;
-            console.error(err);
-        }
-    }
-
-    function renderRow(user) {
-        const tr = document.createElement('tr');
-
-        [user.id, user.fullName, user.email, user.emailVerified, user.createdAt]
-            .forEach(value => {
-                const td = document.createElement('td');
-                td.textContent = value;
-                tr.appendChild(td);
-            });
-
-        const actionTd = document.createElement('td');
-        const btn = document.createElement('button');
-        btn.textContent = 'Delete';
-        btn.addEventListener('click', () => deleteUser(user.id));
-        actionTd.appendChild(btn);
-        tr.appendChild(actionTd);
-
-        rowsEl.appendChild(tr);
-    }
-
-    async function deleteUser(id) {
-        if (!confirm('Delete user ' + id + '?')) return;
-        statusEl.textContent = 'Deleting user ' + id + '...';
-
-        try {
-            const res = await fetch(deleteUserUrl + '/' + id, {
-                method: 'DELETE',
-                headers: authHeaders()
-            });
-
-            if (!res.ok) {
-                statusEl.textContent = 'Delete failed (' + res.status + ')';
-                return;
-            }
-
-            loadUsers();
-        } catch (err) {
-            statusEl.textContent = 'Error: ' + err;
-            console.error(err);
-        }
-    }
-
-    document.getElementById('refreshBtn').addEventListener('click', loadUsers);
-    loadUsers();
-</script>
 
 </body>
 </html>
