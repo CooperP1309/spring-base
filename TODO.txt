@@ -3,7 +3,7 @@ HIGH PRIORITY
 
 [X] Admin Portal
 
-[ ] Setup admin credentials in setup scripts
+[ ] Implement proper logging system
 
 [ ] Ensure Email Verification Secret generated doesn't already exist
 
@@ -11,11 +11,11 @@ HIGH PRIORITY
 
 [ ] Handle email already exists in DB
 
-[ ] Implement proper logging system
+[ ] Minimum password requirements enforced
+
+[ ] Setup admin credentials in setup scripts
 
 [ ] Automate the configuration of SMTP server setup (properties write to application.properties)
-
-[ ] Minimum password requirements enforced
 
  LOW PRIORITY
 [ ] Abstract admin-page inline js to its own static file
