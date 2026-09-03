@@ -13,8 +13,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class AuthenticationService 
 {
     private final UserRepository userRepository;
@@ -50,6 +52,19 @@ public class AuthenticationService
                         .setEmailVerified(true)
                         .setRole(Role.ADMIN);
                 userRepository.save(admin);
+            }
+        }
+
+        // ensure there's no other admin user in the database
+        // start by getting all users with the admin role
+        Iterable<User> adminUsers = userRepository.findAllByRole(Role.ADMIN);
+        for (User adminUser : adminUsers)
+        {
+            // if the admin user is not the one we just created, delete it
+            if (!adminUser.getEmail().equals(adminEmail))
+            {
+                userRepository.delete(adminUser);
+                log.info("Deleted existing admin user with email: {}", adminUser.getEmail());
             }
         }
     }
@@ -117,6 +132,7 @@ public class AuthenticationService
         try {
             userRepository.save(user);
         } catch (DataAccessException e) {
+            log.error("Error saving user with verified email: " + e.getMessage());
             return false;
         }
 

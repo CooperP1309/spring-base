@@ -27,12 +27,15 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.stereotype.Controller;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.springframework.dao.DataIntegrityViolationException;
 
 /* ===== java libs =====*/
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 @RequestMapping("/auth")
 @Controller
+@Slf4j
 public class AuthenticationController 
 {
 
@@ -133,17 +136,45 @@ public class AuthenticationController
         if (!this.emailValidator.isValid(newUser.getEmail())) 
         {
             model.addAttribute("emailValid", false);
+            log.debug("Invalid email format provided during registration: {}", newUser.getEmail());
+            
             return "register-page";
         }
 
         model.addAttribute("emailValid", true);
 
         // add user to db
-        User registeredUser = authenticationService.signup(newUser);
+        User registeredUser = null;
+        
+        try 
+        {
+            registeredUser = authenticationService.signup(newUser);
+        }
+        catch (DataIntegrityViolationException e)
+        {
+            model.addAttribute("registrationSuccess", false);
+            log.error("Registration failed for email: {}. Exception: {}", newUser.getEmail(), e.getMessage());
+            
+            return "register-page";
+        }
 
-        // send the user their verification link
+        // send verificaiton email
         String result = smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(), 
                                                             registeredUser.getEmail());
+
+        log.info("Verification email status '{}': '{}'", newUser.getEmail(), result);
+
+        if (result.equals("Failure"))
+        {
+            model.addAttribute("registrationSuccess", false);
+            
+            // ensure to delete user from db so that they can reattempt later
+            userRepository.delete(registeredUser);
+
+            return "register-page";
+        }
+
+        log.info("User registered successfully: {}", newUser.getEmail());
 
         return "register-page";
     }
@@ -181,7 +212,6 @@ public class AuthenticationController
      */
     public ResponseEntity<Void> setAccountEnabled(@RequestBody SetAccountEnabledDto input)
     {
-        
         if (input.isEnabled()) {
             authenticationService.setEmailAsVerified(input.getEmail());
         } else {

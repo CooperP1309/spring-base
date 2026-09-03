@@ -27,9 +27,11 @@ import org.springframework.stereotype.Controller;
 /* ===== java libs =====*/
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 @RequestMapping("/admin")
 @Controller
+@Slf4j
 public class AdminController 
 {
     private final JwtService jwtService;
@@ -58,6 +60,8 @@ public class AdminController
     {
         List <User> users = userService.allUsers();
 
+        log.info("Retrieved {} users from the system", users.size());
+
         return ResponseEntity.ok(users);
     }
 
@@ -72,6 +76,8 @@ public class AdminController
     {
         userService.deleteUser(userID);
 
+        log.info("User with ID {} deleted successfully", userID);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -84,7 +90,6 @@ public class AdminController
      */
     public String getDashboard()
     {
-
         return "admin-page";
     }
 }

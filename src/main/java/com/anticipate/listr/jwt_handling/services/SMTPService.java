@@ -37,8 +37,6 @@ public class SMTPService
                         "To complete your account setup, click the verification link below:\n\n" +
                         verificationLink;
 
-        System.out.println("[SMTPService] Sending verification link to " + receivingEmail + "\n");
-
         return sendEmail(subject, body, receivingEmail);
     }
 
@@ -64,7 +62,6 @@ public class SMTPService
         }
         catch (Exception ex) 
         {
-            System.out.println("Failed to send: " + ex.getMessage());    
             return "Failure";
         }
     }
