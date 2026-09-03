@@ -16,12 +16,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 @RequestMapping("/")
 @Controller
+@Slf4j
 public class HomeController 
 {
     private final UserService userService;
@@ -31,6 +32,8 @@ public class HomeController
     public HomeController(UserService userService,
                             JwtService jwtService) 
     {
+        log.info("Initializing HomeController");
+        
         this.userService = userService;
         this.jwtService = jwtService;
     }
