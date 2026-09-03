@@ -15,9 +15,9 @@ HIGH PRIORITY
 
 [ ] Remove hardcoding of localhost from generated verification link (add app.properties variable)
 
-[ ] Setup admin credentials in setup scripts
+[X] Setup admin credentials in setup scripts
 
-[ ] Automate the configuration of SMTP server setup (properties write to application.properties)
+[X] Automate the configuration of SMTP server setup (properties write to application.properties)
 
  LOW PRIORITY
 [X] Abstract admin-page inline js to its own static file
