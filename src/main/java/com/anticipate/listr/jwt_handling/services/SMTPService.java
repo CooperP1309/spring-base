@@ -11,9 +11,6 @@ public class SMTPService
     @Value("${smtp.sender.email}")
     private String senderEmail;
 
-    @Value("${smtp.receiver.email}")
-    private String receiverEmail;
-
     private JavaMailSender mailSender;
 
     public SMTPService(JavaMailSender mailSender) 
