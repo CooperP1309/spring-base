@@ -11,6 +11,9 @@ public class SMTPService
     @Value("${smtp.sender.email}")
     private String senderEmail;
 
+    @Value("${smtp.verification.base-url}")
+    private String verificationBaseUrl;
+
     private JavaMailSender mailSender;
 
     public SMTPService(JavaMailSender mailSender) 
@@ -27,7 +30,10 @@ public class SMTPService
     public String sendVerificationLink(String verificationCode, String receivingEmail) 
     {
         
-        String verificationLink = "http://localhost:8005/auth/verify/" + verificationCode;
+        String base = verificationBaseUrl.endsWith("/")
+                ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
+                : verificationBaseUrl;
+        String verificationLink = base + "/auth/verify/" + verificationCode;
 
         String subject = "Verify your account";
         String body =   "Thank you for signing up!\n\n" +

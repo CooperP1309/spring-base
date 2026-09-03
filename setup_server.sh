@@ -241,6 +241,35 @@ case "$smtp_tls" in
 esac
 
 clear
+echo "--------- Public Base URL ---------"
+echo
+echo
+echo "When a new user registers, the server emails them an account-verification"
+echo "link. This setting is the scheme and host that link points to - i.e. the"
+echo "address a browser on the user's machine uses to reach this server."
+echo
+echo "The verification path is appended automatically; enter only the protocol"
+echo "and host (no trailing path). For example:"
+echo
+echo "    http://123.45.67.89"
+echo "    https://listr.example.com"
+echo
+echo "If you are testing locally, you can use:"
+echo
+echo "    http://localhost:$server_port"
+echo
+while true; do
+    read -rp "Public base URL: " verification_base_url \
+        || { echo "Error: no input." >&2; exit 1; }
+    verification_base_url=${verification_base_url%/}
+    if [[ $verification_base_url =~ ^https?://[A-Za-z0-9.-]+(:[0-9]+)?$ ]]; then
+        break
+    fi
+    echo "Error: enter something like 'http://host' or 'https://host:port'." >&2
+    echo
+done
+
+clear
 echo "--------- Admin Portal Setup ---------"
 echo
 echo
@@ -268,6 +297,7 @@ printf '  %-26s %s\n' "SMTP host:" "$smtp_host"
 printf '  %-26s %s\n' "SMTP port:" "$smtp_port"
 printf '  %-26s %s\n' "SMTP username:" "$smtp_username"
 printf '  %-26s %s\n' "Sender email:" "$smtp_sender"
+printf '  %-26s %s\n' "Public base URL:" "$verification_base_url"
 printf '  %-26s %s\n' "Admin portal email:" "$admin_email"
 echo
 echo "Note: All of the above (including passwords) is written in plain text to"
@@ -304,6 +334,8 @@ security.jwt.expiration-time=3600000
 
 # SMTP server config
 smtp.sender.email=$smtp_sender
+# Public scheme + host used to build verification links emailed to new users
+smtp.verification.base-url=$verification_base_url
 
 spring.mail.host=$smtp_host
 spring.mail.port=$smtp_port
