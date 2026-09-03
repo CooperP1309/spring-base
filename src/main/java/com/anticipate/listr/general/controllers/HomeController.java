@@ -32,8 +32,6 @@ public class HomeController
     public HomeController(UserService userService,
                             JwtService jwtService) 
     {
-        log.info("Initializing HomeController");
-        
         this.userService = userService;
         this.jwtService = jwtService;
     }
