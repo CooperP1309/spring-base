@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+clear
+echo
+echo "Checking required services and tools..."
+
 if ! command -v mvn &> /dev/null; then
     echo "Error: Maven (mvn) is not installed or not in PATH." >&2
     exit 1
@@ -108,6 +112,7 @@ prompt_smtp_provider() {
         case "$choice" in
             1 )
                 host=smtp.gmail.com; port=587; tls=starttls
+                echo >&2
                 echo "Note: Gmail requires an App Password (enable 2-Step Verification first)." >&2
                 echo "      Enter it exactly as Google shows it, e.g. 'abcd efgh ijkl mnop'" >&2
                 echo "      (16 characters as 4 space-separated groups; keep the spaces)." >&2
@@ -213,7 +218,7 @@ echo
 read -rp "Enter the sender email address: " smtp_sender
 smtp_username=""
 while [[ -z "$smtp_username" ]]; do
-    read -rp "Enter the SMTP username [$smtp_sender]: " smtp_username
+    read -rp "Enter the SMTP username (same as the sending address for default cases): " smtp_username
     smtp_username=${smtp_username:-$smtp_sender}
 done
 while true; do
@@ -239,7 +244,7 @@ clear
 echo "--------- Admin Portal Setup ---------"
 echo
 echo
-read -rp "Enter the admin portal email: " admin_email
+read -rp "Enter the admin portal email (doesn't have to be a real email): " admin_email
 while true; do
     read -rsp "Enter the admin portal password: " admin_password
     echo
@@ -277,9 +282,11 @@ case "$confirm" in
 esac
 echo
 mkdir -p ./src/main/resources
-echo "spring.application.name=springboot
-
+echo "# Spring Specific
+spring.application.name=springboot
 server.port=$server_port
+logging.level.root=INFO
+logging.level.org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer=ERROR
 
 # Database Configuration
 spring.datasource.url=jdbc:mysql://localhost:$db_port/taskdb?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
