@@ -7,11 +7,11 @@ HIGH PRIORITY
 
 [X] Fix log chains for user not enabled, duplicate email, invalid session token...
 
-[ ] Handle email already exists in DB
+[X] Handle email already exists in DB (already has unique constraint)
 
-[ ] Ensure Email Verification Secret generated doesn't already exist
+[X] Ensure Email Verification Secret generated doesn't already exist (already unique by design)
 
-[ ] Minimum password requirements enforced
+[X] Minimum password requirements enforced
 
 [ ] Remove hardcoding of localhost from generated verification link (add app.properties variable)
 
@@ -20,7 +20,7 @@ HIGH PRIORITY
 [ ] Automate the configuration of SMTP server setup (properties write to application.properties)
 
  LOW PRIORITY
-[ ] Abstract admin-page inline js to its own static file
+[X] Abstract admin-page inline js to its own static file
 
 [X] Remove EmailValid bool from RegisterUserDto
 

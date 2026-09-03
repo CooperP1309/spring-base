@@ -34,7 +34,14 @@
             console.log('login response', res.status, text);
 
             if (!res.ok) {
-                statusEl.textContent = 'Login failed (' + res.status + '): ' + text;
+                let message = text;
+                try {
+                    const body = JSON.parse(text);
+                    message = body.description || body.detail || body.title || text;
+                } catch (_) {
+                    // response wasn't JSON; fall back to the raw text
+                }
+                statusEl.textContent = 'Login failed: ' + message;
                 return;
             }
 

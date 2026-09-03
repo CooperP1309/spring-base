@@ -38,7 +38,7 @@ public class User implements UserDetails
     @ColumnDefault("'USER'")
     private Role role = Role.USER;
 
-    @Column
+    @Column(unique = true)
     private String emailVerificationSecret;
 
     @CreationTimestamp
