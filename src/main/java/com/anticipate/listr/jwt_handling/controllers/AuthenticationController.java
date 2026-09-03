@@ -168,7 +168,7 @@ public class AuthenticationController
         {
             model.addAttribute("registrationSuccess", false);
             
-            // ensure to delete user from db so that they can reattempt
+            // ensure to delete user from db so that they can reattempt later
             userRepository.delete(registeredUser);
 
             return "register-page";
@@ -212,7 +212,6 @@ public class AuthenticationController
      */
     public ResponseEntity<Void> setAccountEnabled(@RequestBody SetAccountEnabledDto input)
     {
-        
         if (input.isEnabled()) {
             authenticationService.setEmailAsVerified(input.getEmail());
         } else {

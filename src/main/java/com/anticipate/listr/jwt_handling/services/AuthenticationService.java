@@ -54,6 +54,19 @@ public class AuthenticationService
                 userRepository.save(admin);
             }
         }
+
+        // ensure there's no other admin user in the database
+        // start by getting all users with the admin role
+        Iterable<User> adminUsers = userRepository.findAllByRole(Role.ADMIN);
+        for (User adminUser : adminUsers)
+        {
+            // if the admin user is not the one we just created, delete it
+            if (!adminUser.getEmail().equals(adminEmail))
+            {
+                userRepository.delete(adminUser);
+                log.info("Deleted existing admin user with email: {}", adminUser.getEmail());
+            }
+        }
     }
 
     public User signup(RegisterUserDto input) 
@@ -119,6 +132,7 @@ public class AuthenticationService
         try {
             userRepository.save(user);
         } catch (DataAccessException e) {
+            log.error("Error saving user with verified email: " + e.getMessage());
             return false;
         }
 
