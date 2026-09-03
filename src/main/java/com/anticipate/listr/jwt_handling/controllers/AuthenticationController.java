@@ -69,8 +69,15 @@ public class AuthenticationController
      *  This endpoint deserializes JSON and authenticates
      *  the passed login credentials to produce a JWT token.
      */
-    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto) 
+    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto,
+                                                        BindingResult bindingResult) 
     {
+        if (bindingResult.hasErrors()) 
+        {
+            log.warn("Login request rejected due to errors: {}", bindingResult.getAllErrors());
+            return ResponseEntity.badRequest().build();
+        }
+
         User authenticatedUser = authenticationService.authenticate(loginUserDto);
 
         String jwtToken = jwtService.generateToken(authenticatedUser);
