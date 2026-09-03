@@ -5,7 +5,11 @@ HIGH PRIORITY
 
 [ ] Implement proper logging system
 
+[ ] Fix log chains for user not enabled, duplicate email, invalid session token...
+
 [ ] Ensure Email Verification Secret generated doesn't already exist
+
+[ ] Add log viewing to admin dashboard
 
 [ ] Remove hardcoding of localhost from generated verification link (add app.properties variable)
 
@@ -21,7 +25,5 @@ HIGH PRIORITY
 [ ] Abstract admin-page inline js to its own static file
 
 [X] Remove EmailValid bool from RegisterUserDto
-
-[ ] Fix log chains for user not enabled, duplicate email, invalid session token...
 
 [ ] Refactoor "JWT SEssion habdling" to authentication/
