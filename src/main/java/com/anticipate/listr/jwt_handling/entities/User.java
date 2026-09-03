@@ -38,6 +38,7 @@ public class User implements UserDetails
     @ColumnDefault("'USER'")
     private Role role = Role.USER;
 
+    @Column(unique = true)
     @Column
     private String emailVerificationSecret;
 
