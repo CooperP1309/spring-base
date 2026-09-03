@@ -39,7 +39,6 @@ public class User implements UserDetails
     private Role role = Role.USER;
 
     @Column(unique = true)
-    @Column
     private String emailVerificationSecret;
 
     @CreationTimestamp

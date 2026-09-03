@@ -28,9 +28,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.stereotype.Controller;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.validation.BindingResult;
 
 /* ===== java libs =====*/
 import java.util.Optional;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 @RequestMapping("/auth")
@@ -129,52 +131,89 @@ public class AuthenticationController
     *   will contain a link that won't allow loggin in with the account 
     *   until the link is opened.
     */
-    public String register(@ModelAttribute("user") RegisterUserDto newUser, Model model) 
+    public String register(@Valid @ModelAttribute("user") RegisterUserDto newUser,
+                           BindingResult bindingResult,
+                           Model model)
     {
-
-        // determine email format valid before continuing pipeline
-        if (!this.emailValidator.isValid(newUser.getEmail())) 
+        // validate email format and existence
+        if (!bindingResult.hasFieldErrors("email") && 
+            !this.emailValidator.isValid(newUser.getEmail()))
         {
-            model.addAttribute("emailValid", false);
+            /* My first introduction to bindingResult
+             *
+             * Why we don't just add a string attribute to the model;
+             * - bindingResult is a Spring object that can be read by every downstream
+             *   Spring module
+             * - It can be used to resolve front end error messages without having to type
+             *   them each time.
+             *
+             * rejectValue() syntax:
+             * - field: the name of the field that has an error
+             * - errorCode: a code that can be used to resolve a custom defined error
+             *   message in "messages.properties"
+             * - defaultMessage: a default message to be used if no custom message is found
+             */
+            bindingResult.rejectValue("email", "email.invalid", "Invalid email provided.");
             log.debug("Invalid email format provided during registration: {}", newUser.getEmail());
-            
+        }
+
+        // bind all other errors to the result
+        if (bindingResult.hasErrors())
+        {
+            log.debug("Registration rejected due to errors: {}", bindingResult.getAllErrors());
+
             return "register-page";
         }
 
-        model.addAttribute("emailValid", true);
+        /*  Why are there two if gates for bindingResult?
+         *
+         *  The first gate checks against the email validator (a seperate module).
+         *  If it's a problem, the error is added to the binding result, but no rejection
+         *  of the registration is made yet.
+         * 
+         *  By the second gate, if there are any other errors at all, (automatically added
+         *  by the @Valid annotation (see user entity - password field) and by other means), 
+         *  we reject the registration.
+         * 
+         *  BindingResult sets errors through rejectValue() and reject() and gets errors 
+         *  through hasErrors() and getAllErrors(). The result of errors is reflected in the
+         *  front end by thymeleaf. (see register-page.html for example)
+         */
 
         // add user to db
         User registeredUser = null;
-        
-        try 
+
+        try
         {
             registeredUser = authenticationService.signup(newUser);
         }
         catch (DataIntegrityViolationException e)
         {
-            model.addAttribute("registrationSuccess", false);
             log.error("Registration failed for email: {}. Exception: {}", newUser.getEmail(), e.getMessage());
-            
+            bindingResult.reject("registration.failed",
+                    "Internal error adding user details. Please contact the system administrator.");
+
             return "register-page";
         }
 
         // send verificaiton email
-        String result = smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(), 
+        String result = smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(),
                                                             registeredUser.getEmail());
 
         log.info("Verification email status '{}': '{}'", newUser.getEmail(), result);
 
         if (result.equals("Failure"))
         {
-            model.addAttribute("registrationSuccess", false);
-            
             // ensure to delete user from db so that they can reattempt later
             userRepository.delete(registeredUser);
+            bindingResult.reject("verification.email.failed",
+                    "We couldn't send your verification email. Please try registering again.");
 
             return "register-page";
         }
 
         log.info("User registered successfully: {}", newUser.getEmail());
+        model.addAttribute("registrationSuccess", true);
 
         return "register-page";
     }
