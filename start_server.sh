@@ -71,48 +71,11 @@ db_hostport=${db_hostport%%/*}
 db_port=${db_hostport##*:}
 
 # --- ensure the Docker daemon is running ---------------------------------
-
-wait_for_docker() {
-    local i
-    for ((i = 0; i < 30; i++)); do
-        docker info >/dev/null 2>&1 && return 0
-        printf '.'
-        sleep 1
-    done
-    return 1
-}
-
 if docker info >/dev/null 2>&1; then
     echo "Docker daemon is running."
 else
-    echo "Docker daemon is not running - attempting to start it..."
-
-    # Docker Desktop (Linux) uses a per-user context and its own CLI.
-    if docker context inspect 2>/dev/null | grep -q '"desktop' \
-        && docker desktop status >/dev/null 2>&1; then
-        docker desktop start >/dev/null 2>&1 || true
-    fi
-
-    # systemd-managed daemon.
-    if ! docker info >/dev/null 2>&1 && command -v systemctl >/dev/null 2>&1 \
-        && systemctl list-unit-files 2>/dev/null | grep -q '^docker\.service'; then
-        sudo systemctl start docker || true
-    fi
-
-    # SysV init fallback.
-    if ! docker info >/dev/null 2>&1 && command -v service >/dev/null 2>&1; then
-        sudo service docker start || true
-    fi
-
-    printf 'Waiting for the Docker daemon'
-    if wait_for_docker; then
-        echo
-        echo "Docker daemon is running."
-    else
-        echo
-        echo "Error: could not start the Docker daemon. Start Docker and retry." >&2
-        exit 1
-    fi
+    echo "Docker daemon is NOT running."
+    exit 1
 fi
 
 # --- ensure the MySQL container is running ------------------------------
