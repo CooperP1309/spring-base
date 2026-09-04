@@ -4,18 +4,13 @@ clear
 echo
 echo "Checking required services and tools..."
 
-if ! command -v mvn &> /dev/null; then
-    echo "Error: Maven (mvn) is not installed or not in PATH." >&2
-    exit 1
-fi
-
 if ! command -v docker &> /dev/null; then
     echo "Error: Docker is not installed or not in PATH." >&2
     exit 1
 fi
 
-if ! command -v awk &> /dev/null; then
-    echo "Error: awk is not installed or not in PATH." >&2
+if ! command -v java &> /dev/null; then
+    echo "Error: Java is not installed or not in PATH (needed by ./mvnw)." >&2
     exit 1
 fi
 
@@ -322,6 +317,8 @@ logging.level.org.springframework.security.config.annotation.authentication.conf
 spring.datasource.url=jdbc:mysql://localhost:$db_port/taskdb?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
 spring.datasource.username=root
 spring.datasource.password=$db_password
+# Name of the Docker container running MySQL (used by start_server.sh)
+db.container.name=$db_container_name
 
 ## Hibernate properties
 spring.jpa.hibernate.ddl-auto=update
@@ -404,4 +401,4 @@ echo "SMTP host:          $smtp_host:$smtp_port"
 echo
 echo "To start the server, run the following command:"
 echo
-echo "mvn spring-boot:run"
+echo "./start_server.sh"

@@ -1,4 +1,8 @@
 HIGH PRIORITY
+[ ] Add startup script with Docker validation
+
+[ ] Make windows version of all scripts
+
 [X] Remove admin credentials from startup logs
 
 [X] Admin Portal
@@ -13,7 +17,7 @@ HIGH PRIORITY
 
 [X] Minimum password requirements enforced
 
-[ ] Remove hardcoding of localhost from generated verification link (add app.properties variable)
+[X] Remove hardcoding of localhost from generated verification link (add app.properties variable)
 
 [X] Setup admin credentials in setup scripts
 
