@@ -1,39 +1,22 @@
 package com.anticipate.listr.general.controllers;
 
 import org.springframework.stereotype.Controller;
-import com.anticipate.listr.jwt_handling.dtos.DeleteUserDto;
-import com.anticipate.listr.jwt_handling.entities.User;
-import com.anticipate.listr.jwt_handling.services.UserService;
-import com.anticipate.listr.jwt_handling.services.JwtService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 @RequestMapping("/")
 @Controller
 @Slf4j
 public class HomeController 
 {
-    private final UserService userService;
 
-    private final JwtService jwtService;
-
-    public HomeController(UserService userService,
-                            JwtService jwtService) 
+    public HomeController() 
     {
-        this.userService = userService;
-        this.jwtService = jwtService;
     }
     
     @GetMapping("/")

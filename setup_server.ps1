@@ -85,6 +85,8 @@ function Prompt-SmtpProvider {
                 Write-Host "Note: Gmail requires an App Password (enable 2-Step Verification first)." -ForegroundColor Yellow
                 Write-Host "      Enter it exactly as Google shows it, e.g. 'abcd efgh ijkl mnop'" -ForegroundColor Yellow
                 Write-Host "      (16 characters as 4 space-separated groups; keep the spaces)." -ForegroundColor Yellow
+                Write-Host
+                Write-Host "      Refer to README.md for an quick explanation of this setup." -ForegroundColor Yellow
                 return @{ Host = 'smtp.gmail.com'; Port = 587; Tls = 'starttls' }
             }
             '2' {
