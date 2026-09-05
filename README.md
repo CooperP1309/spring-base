@@ -8,7 +8,6 @@ A Spring Boot starter with JWT authentication, an admin portal, and email verifi
 - [Usage on Windows](#usage-on-windows)
 - [Usage on Linux](#usage-on-linux)
 - [Setting up your SMTP](#setting-up-your-smtp)
-- [Testing](#testing)
 
 ## Prerequisites
 
