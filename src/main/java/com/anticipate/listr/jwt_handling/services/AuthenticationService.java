@@ -1,19 +1,23 @@
 package com.anticipate.listr.jwt_handling.services;
 
+/* ===== local libs ===== */
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
 import com.anticipate.listr.jwt_handling.entities.Role;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
-import com.anticipate.listr.jwt_handling.services.SecretGeneratorService;
-import java.util.Optional;
+
+/* ===== spring libs ===== */
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+/* ===== java libs ===== */
 import lombok.extern.slf4j.Slf4j;
+import java.util.Optional;
 
 @Service
 @Slf4j
