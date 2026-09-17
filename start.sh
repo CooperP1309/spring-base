@@ -7,7 +7,7 @@
 #   4. hands off to ./mvnw spring-boot:run
 #
 # All database details are read from src/main/resources/application.properties,
-# which is written by ./setup_server.sh.
+# which is written by ./setup.sh.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
@@ -37,7 +37,7 @@ if ! command -v java &> /dev/null; then
 fi
 
 if [[ ! -f "$PROPS" ]]; then
-    echo "Error: $PROPS not found. Run ./setup_server.sh first." >&2
+    echo "Error: $PROPS not found. Run ./setup.sh first." >&2
     exit 1
 fi
 
@@ -58,7 +58,7 @@ prop() {
 
 db_container=$(prop 'db.container.name') || {
     echo "Error: 'db.container.name' is not set in application.properties." >&2
-    echo "       Re-run ./setup_server.sh (or add the line manually)." >&2
+    echo "       Re-run ./setup.sh (or add the line manually)." >&2
     exit 1
 }
 db_password=$(prop 'spring.datasource.password') || {
@@ -90,7 +90,7 @@ elif docker ps -a --format '{{.Names}}' | grep -Fxq -- "$db_container"; then
     fi
 else
     echo "Error: MySQL container '$db_container' does not exist." >&2
-    echo "       Run ./setup_server.sh to create it." >&2
+    echo "       Run ./setup.sh to create it." >&2
     exit 1
 fi
 

@@ -5,7 +5,6 @@ import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
 import com.anticipate.listr.jwt_handling.dtos.SetAccountEnabledDto;
-import com.anticipate.listr.jwt_handling.responses.LoginResponse;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
@@ -16,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import com.anticipate.listr.jwt_handling.configs.JwtCookie;
+import org.springframework.security.authentication.AccountStatusException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +31,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.validation.BindingResult;
 
 /* ===== java libs =====*/
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,42 +66,60 @@ public class AuthenticationController
     @PostMapping("/login")
     /*  For authorizing user login credentials
      *
-     *  This endpoint deserializes JSON and authenticates
-     *  the passed login credentials to produce a JWT token.
+     *  This endpoint binds a standard urlencoded form post (the same
+     *  shape a plain HTML <form> submits) and authenticates the passed
+     *  login credentials, setting the JWT as an HttpOnly cookie and
+     *  redirecting to the home page. On failure, the login page is
+     *  redisplayed with an error, mirroring the register() pattern below.
      */
-    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto,
-                                                        BindingResult bindingResult) 
+    public String authenticate(@ModelAttribute("user") LoginUserDto loginUserDto,
+                                BindingResult bindingResult,
+                                Model model,
+                                HttpServletResponse response)
     {
-        if (bindingResult.hasErrors()) 
+        if (bindingResult.hasErrors())
         {
             log.warn("Login request rejected due to errors: {}", bindingResult.getAllErrors());
-            return ResponseEntity.badRequest().build();
+            return "login-page";
         }
 
-        User authenticatedUser = authenticationService.authenticate(loginUserDto);
+        User authenticatedUser;
+
+        try
+        {
+            authenticatedUser = authenticationService.authenticate(loginUserDto);
+        }
+        catch (BadCredentialsException e)
+        {
+            log.warn("Login failed for email: {}", loginUserDto.getEmail());
+            bindingResult.reject("login.failed", "The email or password you entered is incorrect.");
+
+            return "login-page";
+        }
+        catch (AccountStatusException e)
+        {
+            log.warn("Login rejected for disabled account: {}", loginUserDto.getEmail());
+            bindingResult.reject("login.disabled", "This account is disabled. Please verify your email first.");
+
+            return "login-page";
+        }
 
         String jwtToken = jwtService.generateToken(authenticatedUser);
 
-        LoginResponse loginResponse = new LoginResponse().setToken(jwtToken).setExpiresIn(jwtService.getExpirationTime());
-
         String cookie = JwtCookie.create(jwtToken, jwtService.getExpirationTime()).toString();
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie)
-                .body(loginResponse);
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie);
+
+        return "redirect:/home-page";
     }
 
     @GetMapping("/login-page")
     /*  Presents a login form
      *
-     *  This endpoint responds with a login form.
-     *  The forms login button is linked to the above
-     *  login endpoint. The form in question uses JS
-     *  voodoo to serialize the login credentials to JSON.
-     *  This is because apparently you can't build JSON bodies
-     *  from html forms, and I wanted to keep the backend as
-     *  standard as possible. Extra note, form has a signup
-     *  buttom which links to the /register-page endpoint.
+     *  This endpoint responds with a login form. The form posts
+     *  directly to the login endpoint above as a standard urlencoded
+     *  submission (no JS involved). Extra note, form has a signup
+     *  link which points to the /register-page endpoint.
      */
     public String loginPage(Model model) 
     {

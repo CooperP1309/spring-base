@@ -396,4 +396,4 @@ Write-Host "SMTP host:          ${smtp_host}:${smtp_port}"
 Write-Host
 Write-Host "To start the server, run the following command:"
 Write-Host
-Write-Host ".\start_server.ps1"
+Write-Host ".\start.ps1"
