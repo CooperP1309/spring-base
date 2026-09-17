@@ -27,7 +27,7 @@ if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
 }
 
 if (-not (Test-Path $Props)) {
-    Write-Error "$Props not found. Run .\setup_server.ps1 first."
+    Write-Error "$Props not found. Run .\setup.ps1 first."
     exit 1
 }
 
@@ -43,7 +43,7 @@ function Get-Prop {
 
 $db_container = Get-Prop 'db.container.name'
 if (-not $db_container) {
-    Write-Error "'db.container.name' is not set in application.properties. Re-run .\setup_server.ps1 (or add the line manually)."
+    Write-Error "'db.container.name' is not set in application.properties. Re-run .\setup.ps1 (or add the line manually)."
     exit 1
 }
 
@@ -79,7 +79,7 @@ if ($isRunning) {
         exit 1
     }
 } else {
-    Write-Error "MySQL container '$db_container' does not exist. Run .\setup_server.ps1 to create it."
+    Write-Error "MySQL container '$db_container' does not exist. Run .\setup.ps1 to create it."
     exit 1
 }
 

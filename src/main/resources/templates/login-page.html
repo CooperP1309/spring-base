@@ -3,27 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
-
-    <!-- Source the JS for handling login functionality -->
-    <script th:src="@{/js/login.js}" defer></script>
 </head>
 <body>
 
-<form id="loginForm"
-      th:data-login-url="@{/auth/login}"
-      th:data-register-url="@{/auth/register-page}">
+<form th:action="@{/auth/login}" th:object="${user}" method="post">
+
+    <!-- Global (non-field) errors -->
+    <div th:if="${#fields.hasGlobalErrors()}">
+        <p th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+    </div>
+
     <label for="email">Email</label>
-    <input type="email" id="email" name="email" required />
+    <input type="email" id="email" th:field="*{email}" required />
 
     <label for="password">Password</label>
-    <input type="password" id="password" name="password" required />
+    <input type="password" id="password" th:field="*{password}" required />
 
     <button type="submit">Login</button>
 </form>
 
-<button type="button" id="signupBtn">Sign Up</button>
-
-<p id="status"></p>
+<p><a th:href="@{/auth/register-page}">Sign Up</a></p>
 
 </body>
 </html>

@@ -401,4 +401,4 @@ echo "SMTP host:          $smtp_host:$smtp_port"
 echo
 echo "To start the server, run the following command:"
 echo
-echo "./start_server.sh"
+echo "./start.sh"
