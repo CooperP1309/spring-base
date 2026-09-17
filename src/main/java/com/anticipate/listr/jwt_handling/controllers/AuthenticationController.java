@@ -19,7 +19,6 @@ import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.ui.Model;
@@ -266,15 +265,16 @@ public class AuthenticationController
     }
 
     @PostMapping("/set-account-enabled")
-    @ResponseBody
     /*  Enables or disables a user account
      *
      *  A user account is considered "enabled" once its email is
      *  verified (see User.isEnabled()). This endpoint lets an admin
      *  flip that flag directly from the dashboard, toggling the
-     *  target user's ability to log in.
+     *  target user's ability to log in. Bound as a urlencoded form
+     *  post from a per-row form on the dashboard, redirecting back
+     *  once done.
      */
-    public ResponseEntity<Void> setAccountEnabled(@RequestBody SetAccountEnabledDto input)
+    public String setAccountEnabled(@ModelAttribute SetAccountEnabledDto input)
     {
         if (input.isEnabled()) {
             authenticationService.setEmailAsVerified(input.getEmail());
@@ -282,6 +282,6 @@ public class AuthenticationController
             authenticationService.setEmailAsNotVerified(input.getEmail());
         }
 
-        return ResponseEntity.noContent().build();
+        return "redirect:/admin/dashboard";
     }
 }
