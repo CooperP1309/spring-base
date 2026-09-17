@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 /* ===== java libs ===== */
 import lombok.extern.slf4j.Slf4j;
 import java.util.Optional;
+import java.time.LocalDate;
 
 @Service
 @Slf4j
@@ -126,16 +127,27 @@ public class AuthenticationService
     {
         Optional<User> userOpt = userRepository.findByEmailVerificationSecret(verificationSecret);
 
-        if (userOpt.isEmpty()) {
+        if (userOpt.isEmpty()) 
+        {
             return false;
         }
 
         User user = userOpt.get();
+
+        // reject if the verification link has expired (more than 1 day old)
+        if (user.getCreatedAt().toInstant().plus(1, java.time.temporal.ChronoUnit.DAYS).isBefore(java.time.Instant.now()))
+        {
+            return false;
+        }
+
         user.setEmailVerified(true);
 
-        try {
+        try 
+        {
             userRepository.save(user);
-        } catch (DataAccessException e) {
+        } 
+        catch (DataAccessException e)
+        {
             log.error("Error saving user with verified email: " + e.getMessage());
             return false;
         }
