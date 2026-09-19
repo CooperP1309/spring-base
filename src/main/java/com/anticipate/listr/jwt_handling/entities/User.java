@@ -41,6 +41,9 @@ public class User implements UserDetails
     @Column(unique = true)
     private String emailVerificationSecret;
 
+    @Column(name = "reset_secret_generated_at")
+    private Date resetSecretGeneratedAt;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private Date createdAt;
@@ -162,13 +165,18 @@ public class User implements UserDetails
         return createdAt;
     }
 
-    public User setCreatedAt(Date createdAt)
+    public Date getResetSecretGeneratedAt()
     {
-        this.createdAt = createdAt;
+        return resetSecretGeneratedAt;
+    }
+
+    public User setResetSecretGeneratedAt(Date resetSecretGeneratedAt)
+    {
+        this.resetSecretGeneratedAt = resetSecretGeneratedAt;
         return this;
     }
 
-    public Date getUpdatedAt() 
+    public Date getUpdatedAt()
     {
         return updatedAt;
     }

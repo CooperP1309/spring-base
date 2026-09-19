@@ -5,6 +5,7 @@ import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
 import com.anticipate.listr.jwt_handling.dtos.ForgotPasswordDto;
+import com.anticipate.listr.jwt_handling.dtos.ResetPasswordDto;
 import com.anticipate.listr.jwt_handling.dtos.SetAccountEnabledDto;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
@@ -200,7 +201,7 @@ public class AuthenticationController
         if (result.equals("Failure"))
         {
             bindingResult.reject("password.reset.sent", "Password Reset link failed to send. Please try again later.");
-            return "forgoet-password-page";
+            return "forgot-password-page";
         }
 
         bindingResult.reject("password.reset.sent", "Password Reset link sent.");
@@ -339,6 +340,72 @@ public class AuthenticationController
         }
 
         return ResponseEntity.ok("Email has been verified.");
+    }
+
+    @GetMapping("/reset-password/{secret}")
+    /*  Presents the password reset form
+     *
+     *  Renders the reset form only when the emailed secret still
+     *  resolves to an unexpired user (see
+     *  AuthenticationService.resolvePasswordResetSecret()). An
+     *  invalid or expired secret isn't a 400 here - it's the same
+     *  page with an error alert instead of the form, pointing the
+     *  user back to /auth/forgot-password to request a new link.
+     */
+    public String resetPasswordPage(@PathVariable String secret, Model model)
+    {
+        Optional<User> userOpt = authenticationService.resolvePasswordResetSecret(secret);
+
+        model.addAttribute("secret", secret);
+        model.addAttribute("user", new ResetPasswordDto());
+        model.addAttribute("secretInvalid", userOpt.isEmpty());
+        model.addAttribute("resetSuccess", false);
+
+        return "reset-password-page";
+    }
+
+    @PostMapping("/reset-password/{secret}")
+    /*  Handles the password reset submission
+     *
+     *  Re-resolves the secret rather than trusting that the page was
+     *  rendered validly - the link could have expired or already been
+     *  used between the GET above and this submission. On success,
+     *  resetPassword() also burns the secret so the emailed link
+     *  can't be replayed.
+     */
+    public String resetPassword(@PathVariable String secret,
+                                 @Valid @ModelAttribute("user") ResetPasswordDto resetPasswordDto,
+                                 BindingResult bindingResult,
+                                 Model model)
+    {
+        model.addAttribute("secret", secret);
+        model.addAttribute("secretInvalid", false);
+        model.addAttribute("resetSuccess", false);
+
+        Optional<User> userOpt = authenticationService.resolvePasswordResetSecret(secret);
+
+        if (userOpt.isEmpty())
+        {
+            log.info("Password reset submitted for invalid or expired secret");
+            model.addAttribute("secretInvalid", true);
+            return "reset-password-page";
+        }
+
+        if (bindingResult.hasErrors())
+        {
+            log.debug("Password reset rejected due to errors: {}", bindingResult.getAllErrors());
+            return "reset-password-page";
+        }
+
+        User user = userOpt.get();
+
+        authenticationService.resetPassword(user, resetPasswordDto.getPassword());
+
+        log.info("Password reset completed for user: {}", user.getEmail());
+
+        model.addAttribute("resetSuccess", true);
+
+        return "reset-password-page";
     }
 
     @PostMapping("/set-account-enabled")

@@ -144,10 +144,7 @@ public class AuthenticationService
         }
 
         // reject if verification link is more than 1 day old
-        if (user.getCreatedAt()
-                .toInstant()
-                .plus(1, java.time.temporal.ChronoUnit.DAYS)
-                .isBefore(java.time.Instant.now()))
+        if (isExpired(user.getCreatedAt()))
         {
             throw new ExpiredVerificationException(user);
         }
@@ -163,12 +160,79 @@ public class AuthenticationService
     public String setNewEmailSecret(User user)
     {
         String verificationSecret = secretGeneratorService.generateSecureSecret();
-        
+
         user.setEmailVerificationSecret(verificationSecret);
-        user.setCreatedAt(new Date());
+        user.setResetSecretGeneratedAt(new Date());
 
         userRepository.save(user);
 
         return verificationSecret;
+    }
+
+    /*  Resolves a password reset secret to its owning user
+     *
+     *  Reuses the emailVerificationSecret field (as set by
+     *  setNewEmailSecret()) rather than a dedicated secret column, but
+     *  expiry is tracked via resetSecretGeneratedAt - NOT createdAt.
+     *  createdAt is @Column(updatable = false), so a Hibernate UPDATE
+     *  silently drops any change to it on an existing row; reusing it
+     *  here would make every reset link for an account older than a
+     *  day appear expired immediately.
+     *
+     *  Unlike verifyEmailSecret(), an expired or unknown secret here
+     *  is not exceptional - it's just "no valid reset in progress" -
+     *  so this returns empty instead of throwing, and the caller must
+     *  not delete the account on that basis (an expired reset link is
+     *  not grounds to wipe a user, unlike an expired signup).
+     */
+    public Optional<User> resolvePasswordResetSecret(String secret)
+    {
+        Optional<User> userOpt = userRepository.findByEmailVerificationSecret(secret);
+
+        if (userOpt.isEmpty())
+        {
+            log.info("Password reset secret not found: {}", secret);
+            return Optional.empty();
+        }
+
+        User user = userOpt.get();
+
+        log.info("Password reset secret '{}' matched user '{}', resetSecretGeneratedAt={}",
+                secret, user.getEmail(), user.getResetSecretGeneratedAt());
+
+        if (isExpired(user.getResetSecretGeneratedAt()))
+        {
+            log.info("Password reset secret expired for user '{}': resetSecretGeneratedAt={}, now={}",
+                    user.getEmail(), user.getResetSecretGeneratedAt(), java.time.Instant.now());
+            return Optional.empty();
+        }
+
+        return userOpt;
+    }
+
+    /*  Applies a new password and burns the reset secret
+     *
+     *  Clearing emailVerificationSecret makes the reset link single
+     *  use - revisiting it afterwards resolves to no user, the same
+     *  as an unknown secret.
+     */
+    public void resetPassword(User user, String newPassword)
+    {
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setEmailVerificationSecret(null);
+
+        userRepository.save(user);
+    }
+
+    private boolean isExpired(Date timestamp)
+    {
+        if (timestamp == null)
+        {
+            return true;
+        }
+
+        return timestamp.toInstant()
+                .plus(1, java.time.temporal.ChronoUnit.DAYS)
+                .isBefore(java.time.Instant.now());
     }
 }
