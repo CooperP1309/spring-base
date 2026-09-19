@@ -6,6 +6,7 @@ import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
 import com.anticipate.listr.jwt_handling.entities.Role;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
+import com.anticipate.listr.jwt_handling.exceptions.ExpiredVerificationException;
 
 /* ===== spring libs ===== */
 import org.springframework.beans.factory.annotation.Value;
@@ -134,10 +135,13 @@ public class AuthenticationService
 
         User user = userOpt.get();
 
-        // reject if the verification link has expired (more than 1 day old)
-        if (user.getCreatedAt().toInstant().plus(1, java.time.temporal.ChronoUnit.DAYS).isBefore(java.time.Instant.now()))
+        // reject if verification link is more than 1 day old
+        if (user.getCreatedAt()
+                .toInstant()
+                .plus(1, java.time.temporal.ChronoUnit.DAYS)
+                .isBefore(java.time.Instant.now()))
         {
-            return false;
+            throw new ExpiredVerificationException(user);
         }
 
         user.setEmailVerified(true);
