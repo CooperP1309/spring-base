@@ -174,12 +174,11 @@ public class AuthenticationController
                                   BindingResult bindingResult)
     {
         Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
-        
-        bindingResult.reject("password.reset.sent", "Password Reset link sent.");
 
         if (existingUser.isEmpty())
         {
             log.info("Password reset requested for unregistered email: {}", forgotPasswordDto.getEmail());   
+            bindingResult.reject("password.reset.sent", "Password Reset link sent.");
             return "forgot-password-page";
         }
 
@@ -188,6 +187,7 @@ public class AuthenticationController
         if (!user.getEmailVerified())
         {
             log.info("Password reset requested for unverified email: {}", forgotPasswordDto.getEmail());   
+            bindingResult.reject("password.reset.sent", "Password Reset link sent.");
             return "forgot-password-page";
         }
 
@@ -195,8 +195,15 @@ public class AuthenticationController
 
         String newSecret = authenticationService.setNewEmailSecret(user);
 
-        // generate link and send it off
+        String result = smtpService.sendPasswordResetLink(newSecret, user.getEmail());
 
+        if (result.equals("Failure"))
+        {
+            bindingResult.reject("password.reset.sent", "Password Reset link failed to send. Please try again later.");
+            return "forgoet-password-page";
+        }
+
+        bindingResult.reject("password.reset.sent", "Password Reset link sent.");
 
         return "forgot-password-page";
     }
