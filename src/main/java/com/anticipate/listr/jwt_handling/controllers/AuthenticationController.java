@@ -145,6 +145,18 @@ public class AuthenticationController
         return "register-page";
     }
 
+    @GetMapping("/forgot-password")
+    /*  Presents the forgot password page
+     *
+     *  This form allows a user to submit the email address
+     *  associated with their account in order to kick off the
+     *  password reset pipeline.
+     */
+    public String forgotPasswordPage()
+    {
+        return "forgot-password-page";
+    }
+
     @PostMapping("/register")
     /*  
     *   Encapsulates the entire registration process
