@@ -121,6 +121,7 @@ done
 
 echo
 echo "--------- Launching Spring Boot ---------"
+echo
 echo "Container:  $db_container"
 [[ -n $db_port ]] && echo "MySQL port: $db_port"
 echo

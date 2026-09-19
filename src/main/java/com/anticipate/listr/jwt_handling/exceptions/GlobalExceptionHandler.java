@@ -15,9 +15,11 @@ import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 @Slf4j
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler 
+{
     @ExceptionHandler(NoSuchElementException.class)
-    public ProblemDetail handleNotFound(NoSuchElementException exception) {
+    public ProblemDetail handleNotFound(NoSuchElementException exception) 
+    {
         ProblemDetail errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(404), exception.getMessage());
         errorDetail.setProperty("description", "The requested resource was not found");
 
@@ -25,12 +27,12 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ProblemDetail handleSecurityException(Exception exception) {
+    public ProblemDetail handleSecurityException(Exception exception) 
+    {
         ProblemDetail errorDetail = null;
 
-        //exception.printStackTrace();
-
-        if (exception instanceof BadCredentialsException) {
+        if (exception instanceof BadCredentialsException) 
+        {
             log.warn("Bad credentials exception: {}", exception.getMessage());
 
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(401), exception.getMessage());
@@ -39,31 +41,36 @@ public class GlobalExceptionHandler {
             return errorDetail;
         }
 
-        if (exception instanceof AccountStatusException) {
+        if (exception instanceof AccountStatusException) 
+        {
             log.warn("Account status exception: {}", exception.getMessage());
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(403), exception.getMessage());
             errorDetail.setProperty("description", "The account is locked");
         }
 
-        if (exception instanceof AccessDeniedException) {
+        if (exception instanceof AccessDeniedException) 
+        {
             log.warn("Access denied exception: {}", exception.getMessage());
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(403), exception.getMessage());
             errorDetail.setProperty("description", "You are not authorized to access this resource");
         }
 
-        if (exception instanceof SignatureException) {
+        if (exception instanceof SignatureException) 
+        {
             log.warn("Signature exception: {}", exception.getMessage());
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(403), exception.getMessage());
             errorDetail.setProperty("description", "The JWT signature is invalid");
         }
 
-        if (exception instanceof ExpiredJwtException) {
+        if (exception instanceof ExpiredJwtException) 
+        {
             log.warn("Expired JWT exception: {}", exception.getMessage());
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(403), exception.getMessage());
             errorDetail.setProperty("description", "The JWT token has expired");
         }
 
-        if (errorDetail == null) {
+        if (errorDetail == null) 
+        {
             log.error("Unexpected exception: {}", exception.getMessage(), exception);
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(500), exception.getMessage());
             errorDetail.setProperty("description", "Unknown internal server error.");

@@ -6,6 +6,8 @@ import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
 import com.anticipate.listr.jwt_handling.entities.Role;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
+import com.anticipate.listr.jwt_handling.exceptions.ExpiredVerificationException;
+import com.anticipate.listr.jwt_handling.exceptions.InvalidVerificationException;
 
 /* ===== spring libs ===== */
 import org.springframework.beans.factory.annotation.Value;
@@ -123,35 +125,37 @@ public class AuthenticationService
                 .orElseThrow();
     }
 
-    public boolean verifyEmailSecret(String verificationSecret)
+    public void verifyEmailSecret(String verificationSecret)
     {
         Optional<User> userOpt = userRepository.findByEmailVerificationSecret(verificationSecret);
 
-        if (userOpt.isEmpty()) 
+        if (userOpt.isEmpty())
         {
-            return false;
+            throw new InvalidVerificationException();
         }
 
         User user = userOpt.get();
 
-        // reject if the verification link has expired (more than 1 day old)
-        if (user.getCreatedAt().toInstant().plus(1, java.time.temporal.ChronoUnit.DAYS).isBefore(java.time.Instant.now()))
+        // ensure the user isn't already verified pre expiration check (clicking old links = bad)
+        if (user.getEmailVerified())
         {
-            return false;
+            return;
+        }
+
+        // reject if verification link is more than 1 day old
+        if (user.getCreatedAt()
+                .toInstant()
+                .plus(1, java.time.temporal.ChronoUnit.DAYS)
+                .isBefore(java.time.Instant.now()))
+        {
+            throw new ExpiredVerificationException(user);
         }
 
         user.setEmailVerified(true);
 
-        try 
-        {
-            userRepository.save(user);
-        } 
-        catch (DataAccessException e)
-        {
-            log.error("Error saving user with verified email: " + e.getMessage());
-            return false;
-        }
+        // let this fall to the global exception handler (DataAccessException)
+        userRepository.save(user);
 
-        return true;
+        return;
     }
 }

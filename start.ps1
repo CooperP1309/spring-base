@@ -110,6 +110,7 @@ for ($i = 1; $i -le 60; $i++) {
 # ---- Launch Spring Boot ----
 Write-Host
 Write-Host "--------- Launching Spring Boot ---------"
+Write-Host
 Write-Host "Container:  $db_container"
 if ($db_port) { Write-Host "MySQL port: $db_port" }
 Write-Host

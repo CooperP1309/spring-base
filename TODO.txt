@@ -1,7 +1,11 @@
 HIGH PRIORITY
-[ ] Add startup script with Docker validation
+[ ] Make parent VerificationException class
 
-[ ] Make windows version of all scripts
+[X] Wipe accounts when verification link expires (only if not verified yet)
+
+[X] Add startup script with Docker validation
+
+[X] Make windows version of all scripts
 
 [X] Remove admin credentials from startup logs
 
@@ -28,4 +32,4 @@ HIGH PRIORITY
 
 [X] Remove EmailValid bool from RegisterUserDto
 
-[ ] Refactoor "JWT SEssion habdling" to authentication/
+[ ] Refactoor JWT Handling pacakge to Authentication

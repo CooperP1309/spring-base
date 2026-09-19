@@ -9,6 +9,8 @@ import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.services.SMTPService;
+import com.anticipate.listr.jwt_handling.exceptions.ExpiredVerificationException;
+import com.anticipate.listr.jwt_handling.exceptions.InvalidVerificationException;
 
 /* ===== spring libs ===== */
 import org.springframework.http.ResponseEntity;
@@ -253,12 +255,25 @@ public class AuthenticationController
      */
     public ResponseEntity<String> verifySecret(@PathVariable String secret)
     {
-        boolean verified = authenticationService.verifyEmailSecret(secret);
+        try 
+        {
+            authenticationService.verifyEmailSecret(secret);
+        }
+        catch (InvalidVerificationException e)
+        {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Verification Secret could not be found.");
+        }
+        catch (ExpiredVerificationException e)
+        {
+            // delete user if verification is expired
+            User expiredUser = e.getUser();
+            userRepository.delete(expiredUser);
 
-        if (!verified) {
             return ResponseEntity
                     .status(HttpStatus.GONE)
-                    .body("This verification link is invalid or has expired.");
+                    .body("Email verification link has expired. Please register again to generate a new link.");
         }
 
         return ResponseEntity.ok("Email has been verified.");
