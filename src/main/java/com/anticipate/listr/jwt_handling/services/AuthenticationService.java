@@ -7,6 +7,7 @@ import com.anticipate.listr.jwt_handling.entities.Role;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.exceptions.ExpiredVerificationException;
+import com.anticipate.listr.jwt_handling.exceptions.InvalidVerificationException;
 
 /* ===== spring libs ===== */
 import org.springframework.beans.factory.annotation.Value;
@@ -130,10 +131,16 @@ public class AuthenticationService
 
         if (userOpt.isEmpty()) 
         {
-            return false;
+            throw new InvalidVerificationException();
         }
 
         User user = userOpt.get();
+
+        // ensure the user isn't already verified pre expiration check (clicking old links = bad)
+        if (user.getEmailVerified())
+        {
+            return true;
+        }
 
         // reject if verification link is more than 1 day old
         if (user.getCreatedAt()

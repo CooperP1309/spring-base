@@ -3,6 +3,7 @@ package com.anticipate.listr.jwt_handling.services;
 import com.anticipate.listr.jwt_handling.entities.Role;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.exceptions.ExpiredVerificationException;
+import com.anticipate.listr.jwt_handling.exceptions.InvalidVerificationException;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -65,14 +66,15 @@ class AuthenticationServiceTest
     }
 
     @Test
-    void verifyEmailSecret_returnsFalse_whenSecretDoesNotMatchAnyUser()
+    void verifyEmailSecret_throwsInvalidVerificationException_whenSecretDoesNotMatchAnyUser()
     {
         when(userRepository.findByEmailVerificationSecret("unknown-secret"))
                 .thenReturn(Optional.empty());
 
-        boolean result = authenticationService.verifyEmailSecret("unknown-secret");
+        assertThrows(
+                InvalidVerificationException.class,
+                () -> authenticationService.verifyEmailSecret("unknown-secret"));
 
-        assertFalse(result);
         verify(userRepository, never()).save(any());
     }
 

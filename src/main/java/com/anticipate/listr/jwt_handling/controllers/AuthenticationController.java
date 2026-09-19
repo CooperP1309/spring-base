@@ -10,6 +10,7 @@ import com.anticipate.listr.jwt_handling.services.JwtService;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.services.SMTPService;
 import com.anticipate.listr.jwt_handling.exceptions.ExpiredVerificationException;
+import com.anticipate.listr.jwt_handling.exceptions.InvalidVerificationException;
 
 /* ===== spring libs ===== */
 import org.springframework.http.ResponseEntity;
@@ -257,6 +258,12 @@ public class AuthenticationController
         try 
         {
             authenticationService.verifyEmailSecret(secret);
+        }
+        catch (InvalidVerificationException e)
+        {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Verification Secret could not be found.");
         }
         catch (ExpiredVerificationException e)
         {
