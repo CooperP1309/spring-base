@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -97,7 +98,7 @@ class AuthenticationServiceTest
     }
 
     @Test
-    void verifyEmailSecret_verifiesUserAndReturnsTrue_whenSecretIsValidAndUnexpired()
+    void verifyEmailSecret_verifiesUser_whenSecretIsValidAndUnexpired()
     {
         User user = new User().setEmail("someone@example.com");
         ReflectionTestUtils.setField(user, "createdAt", Date.from(Instant.now()));
@@ -105,15 +106,14 @@ class AuthenticationServiceTest
         when(userRepository.findByEmailVerificationSecret("good-secret"))
                 .thenReturn(Optional.of(user));
 
-        boolean result = authenticationService.verifyEmailSecret("good-secret");
+        authenticationService.verifyEmailSecret("good-secret");
 
-        assertTrue(result);
         assertTrue(user.getEmailVerified());
         verify(userRepository).save(user);
     }
 
     @Test
-    void verifyEmailSecret_returnsFalse_whenSaveFails()
+    void verifyEmailSecret_propagatesDataAccessException_whenSaveFails()
     {
         User user = new User().setEmail("someone@example.com");
         ReflectionTestUtils.setField(user, "createdAt", Date.from(Instant.now()));
@@ -123,8 +123,8 @@ class AuthenticationServiceTest
         when(userRepository.save(user))
                 .thenThrow(new DataIntegrityViolationException("simulated db failure"));
 
-        boolean result = authenticationService.verifyEmailSecret("good-secret");
-
-        assertFalse(result);
+        assertThrows(
+                DataAccessException.class,
+                () -> authenticationService.verifyEmailSecret("good-secret"));
     }
 }

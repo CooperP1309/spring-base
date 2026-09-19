@@ -125,11 +125,11 @@ public class AuthenticationService
                 .orElseThrow();
     }
 
-    public boolean verifyEmailSecret(String verificationSecret)
+    public void verifyEmailSecret(String verificationSecret)
     {
         Optional<User> userOpt = userRepository.findByEmailVerificationSecret(verificationSecret);
 
-        if (userOpt.isEmpty()) 
+        if (userOpt.isEmpty())
         {
             throw new InvalidVerificationException();
         }
@@ -139,7 +139,7 @@ public class AuthenticationService
         // ensure the user isn't already verified pre expiration check (clicking old links = bad)
         if (user.getEmailVerified())
         {
-            return true;
+            return;
         }
 
         // reject if verification link is more than 1 day old
@@ -153,16 +153,9 @@ public class AuthenticationService
 
         user.setEmailVerified(true);
 
-        try 
-        {
-            userRepository.save(user);
-        } 
-        catch (DataAccessException e)
-        {
-            log.error("Error saving user with verified email: " + e.getMessage());
-            return false;
-        }
+        // let this fall to the global exception handler (DataAccessException)
+        userRepository.save(user);
 
-        return true;
+        return;
     }
 }
