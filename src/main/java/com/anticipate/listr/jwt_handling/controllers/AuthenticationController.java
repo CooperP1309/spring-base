@@ -36,6 +36,7 @@ import org.springframework.validation.BindingResult;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import java.util.Optional;
 
 @RequestMapping("/auth")
 @Controller
@@ -163,16 +164,39 @@ public class AuthenticationController
     @PostMapping("/forgot-password")
     /*  Handles the forgot password submission
      *
-     *  Placeholder for the password reset pipeline. For now, just
-     *  logs the submitted email and confirms to the user that a
-     *  reset link has been sent.
+     *  Placeholder for the password reset pipeline. Looks up the
+     *  submitted email internally, but always returns the same
+     *  generic message regardless of whether an account was found -
+     *  this avoids leaking which emails are registered (user
+     *  enumeration).
      */
     public String forgotPassword(@ModelAttribute("user") ForgotPasswordDto forgotPasswordDto,
                                   BindingResult bindingResult)
     {
+        Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
+        
+        bindingResult.reject("password.reset.sent", "Password Reset link sent.");
+
+        if (existingUser.isEmpty())
+        {
+            log.info("Password reset requested for unregistered email: {}", forgotPasswordDto.getEmail());   
+            return "forgot-password-page";
+        }
+
+        User user = existingUser.get();
+
+        if (!user.getEmailVerified())
+        {
+            log.info("Password reset requested for unverified email: {}", forgotPasswordDto.getEmail());   
+            return "forgot-password-page";
+        }
+
         log.info("Password reset requested for email: {}", forgotPasswordDto.getEmail());
 
-        bindingResult.reject("password.reset.sent", "Password Reset link sent.");
+        String newSecret = authenticationService.setNewEmailSecret(user);
+
+        // generate link and send it off
+
 
         return "forgot-password-page";
     }
@@ -254,7 +278,6 @@ public class AuthenticationController
             return "register-page";
         }
 
-        // send verificaiton email
         String result = smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(),
                                                             registeredUser.getEmail());
 

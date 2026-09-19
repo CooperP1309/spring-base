@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 /* ===== java libs ===== */
 import lombok.extern.slf4j.Slf4j;
 import java.util.Optional;
+import java.util.Date;
 import java.time.LocalDate;
 
 @Service
@@ -157,5 +158,17 @@ public class AuthenticationService
         userRepository.save(user);
 
         return;
+    }
+
+    public String setNewEmailSecret(User user)
+    {
+        String verificationSecret = secretGeneratorService.generateSecureSecret();
+        
+        user.setEmailVerificationSecret(verificationSecret);
+        user.setCreatedAt(new Date());
+
+        userRepository.save(user);
+
+        return verificationSecret;
     }
 }

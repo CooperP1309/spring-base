@@ -157,9 +157,15 @@ public class User implements UserDetails
         return this;
     }
 
-    public Date getCreatedAt() 
+    public Date getCreatedAt()
     {
         return createdAt;
+    }
+
+    public User setCreatedAt(Date createdAt)
+    {
+        this.createdAt = createdAt;
+        return this;
     }
 
     public Date getUpdatedAt() 
