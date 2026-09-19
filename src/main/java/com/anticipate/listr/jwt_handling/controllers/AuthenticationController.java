@@ -4,6 +4,7 @@ package com.anticipate.listr.jwt_handling.controllers;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
+import com.anticipate.listr.jwt_handling.dtos.ForgotPasswordDto;
 import com.anticipate.listr.jwt_handling.dtos.SetAccountEnabledDto;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
@@ -152,8 +153,27 @@ public class AuthenticationController
      *  associated with their account in order to kick off the
      *  password reset pipeline.
      */
-    public String forgotPasswordPage()
+    public String forgotPasswordPage(Model model)
     {
+        model.addAttribute("user", new ForgotPasswordDto());
+
+        return "forgot-password-page";
+    }
+
+    @PostMapping("/forgot-password")
+    /*  Handles the forgot password submission
+     *
+     *  Placeholder for the password reset pipeline. For now, just
+     *  logs the submitted email and confirms to the user that a
+     *  reset link has been sent.
+     */
+    public String forgotPassword(@ModelAttribute("user") ForgotPasswordDto forgotPasswordDto,
+                                  BindingResult bindingResult)
+    {
+        log.info("Password reset requested for email: {}", forgotPasswordDto.getEmail());
+
+        bindingResult.reject("password.reset.sent", "Password Reset link sent.");
+
         return "forgot-password-page";
     }
 
