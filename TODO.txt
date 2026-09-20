@@ -1,7 +1,7 @@
 HIGH PRIORITY
 [X] EMERGENCY!!! setAccountEnabled() is currently hittable publicly!!!!! PLEASE DELEGATE THIS TO ADMIN ENDPOINT ONLY
 
-[ ] DESTROY the userservice testing controller - Still exposes power endpoints to regular users
+[X] DESTROY the userservice testing controller - Still exposes power endpoints to regular users
 
 [X] Implement redirect in global exception handler for invalid session token
 

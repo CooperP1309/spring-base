@@ -1,6 +1,7 @@
 package com.anticipate.listr.jwt_handling.controllers;
 
 import com.anticipate.listr.jwt_handling.dtos.ForgotPasswordDto;
+import com.anticipate.listr.jwt_handling.dtos.ResetPasswordDto;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ui.ExtendedModelMap;
+import org.springframework.ui.Model;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 
@@ -118,5 +121,61 @@ class AuthenticationControllerTest
         assertEquals("forgot-password-page", view);
         assertEquals("Password Reset link failed to send. Please try again later.",
                 bindingResult.getGlobalError().getDefaultMessage());
+    }
+
+    @Test
+    void resetPassword_showsInvalidSecret_whenSecretDoesNotResolve()
+    {
+        ResetPasswordDto input = new ResetPasswordDto().setPassword("NewPassword123");
+        BindingResult bindingResult = new BeanPropertyBindingResult(input, "user");
+        Model model = new ExtendedModelMap();
+
+        when(authenticationService.resolvePasswordResetSecret("bad-secret")).thenReturn(Optional.empty());
+
+        String view = authenticationController.resetPassword("bad-secret", input, bindingResult, model);
+
+        assertEquals("reset-password-page", view);
+        assertEquals(true, model.getAttribute("secretInvalid"));
+        assertEquals(false, model.getAttribute("resetSuccess"));
+        verify(authenticationService, never()).resetPassword(any(), any());
+    }
+
+    @Test
+    void resetPassword_redisplaysForm_whenValidationErrors()
+    {
+        ResetPasswordDto input = new ResetPasswordDto().setPassword("short");
+        BindingResult bindingResult = new BeanPropertyBindingResult(input, "user");
+        bindingResult.rejectValue("password", "Size", "Password must be at least 12 characters long");
+        Model model = new ExtendedModelMap();
+
+        User user = new User().setEmail("verified@example.com");
+
+        when(authenticationService.resolvePasswordResetSecret("good-secret")).thenReturn(Optional.of(user));
+
+        String view = authenticationController.resetPassword("good-secret", input, bindingResult, model);
+
+        assertEquals("reset-password-page", view);
+        assertEquals(false, model.getAttribute("secretInvalid"));
+        assertEquals(false, model.getAttribute("resetSuccess"));
+        verify(authenticationService, never()).resetPassword(any(), any());
+    }
+
+    @Test
+    void resetPassword_completesReset_whenSecretValidAndNoErrors()
+    {
+        ResetPasswordDto input = new ResetPasswordDto().setPassword("NewPassword123");
+        BindingResult bindingResult = new BeanPropertyBindingResult(input, "user");
+        Model model = new ExtendedModelMap();
+
+        User user = new User().setEmail("verified@example.com");
+
+        when(authenticationService.resolvePasswordResetSecret("good-secret")).thenReturn(Optional.of(user));
+
+        String view = authenticationController.resetPassword("good-secret", input, bindingResult, model);
+
+        assertEquals("reset-password-page", view);
+        assertEquals(false, model.getAttribute("secretInvalid"));
+        assertEquals(true, model.getAttribute("resetSuccess"));
+        verify(authenticationService).resetPassword(user, "NewPassword123");
     }
 }
