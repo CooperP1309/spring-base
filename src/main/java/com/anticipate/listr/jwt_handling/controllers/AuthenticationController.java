@@ -4,7 +4,8 @@ package com.anticipate.listr.jwt_handling.controllers;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
-import com.anticipate.listr.jwt_handling.dtos.SetAccountEnabledDto;
+import com.anticipate.listr.jwt_handling.dtos.ForgotPasswordDto;
+import com.anticipate.listr.jwt_handling.dtos.ResetPasswordDto;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
@@ -35,6 +36,7 @@ import org.springframework.validation.BindingResult;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import java.util.Optional;
 
 @RequestMapping("/auth")
 @Controller
@@ -145,6 +147,67 @@ public class AuthenticationController
         return "register-page";
     }
 
+    @GetMapping("/forgot-password")
+    /*  Presents the forgot password page
+     *
+     *  This form allows a user to submit the email address
+     *  associated with their account in order to kick off the
+     *  password reset pipeline.
+     */
+    public String forgotPasswordPage(Model model)
+    {
+        model.addAttribute("user", new ForgotPasswordDto());
+
+        return "forgot-password-page";
+    }
+
+    @PostMapping("/forgot-password")
+    /*  Handles the forgot password submission
+     *
+     *  Placeholder for the password reset pipeline. Looks up the
+     *  submitted email internally, but always returns the same
+     *  generic message regardless of whether an account was found -
+     *  this avoids leaking which emails are registered (user
+     *  enumeration).
+     */
+    public String forgotPassword(@ModelAttribute("user") ForgotPasswordDto forgotPasswordDto,
+                                  BindingResult bindingResult)
+    {
+        Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
+
+        if (existingUser.isEmpty())
+        {
+            log.info("Password reset requested for unregistered email: {}", forgotPasswordDto.getEmail());   
+            bindingResult.reject("password.reset.sent", "Password Reset link sent.");
+            return "forgot-password-page";
+        }
+
+        User user = existingUser.get();
+
+        if (!user.getEmailVerified())
+        {
+            log.info("Password reset requested for unverified email: {}", forgotPasswordDto.getEmail());   
+            bindingResult.reject("password.reset.sent", "Password Reset link sent.");
+            return "forgot-password-page";
+        }
+
+        log.info("Password reset requested for email: {}", forgotPasswordDto.getEmail());
+
+        String newSecret = authenticationService.setNewEmailSecret(user);
+
+        String result = smtpService.sendPasswordResetLink(newSecret, user.getEmail());
+
+        if (result.equals("Failure"))
+        {
+            bindingResult.reject("password.reset.sent", "Password Reset link failed to send. Please try again later.");
+            return "forgot-password-page";
+        }
+
+        bindingResult.reject("password.reset.sent", "Password Reset link sent.");
+
+        return "forgot-password-page";
+    }
+
     @PostMapping("/register")
     /*  
     *   Encapsulates the entire registration process
@@ -222,7 +285,6 @@ public class AuthenticationController
             return "register-page";
         }
 
-        // send verificaiton email
         String result = smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(),
                                                             registeredUser.getEmail());
 
@@ -279,24 +341,70 @@ public class AuthenticationController
         return ResponseEntity.ok("Email has been verified.");
     }
 
-    @PostMapping("/set-account-enabled")
-    /*  Enables or disables a user account
+    @GetMapping("/reset-password/{secret}")
+    /*  Presents the password reset form
      *
-     *  A user account is considered "enabled" once its email is
-     *  verified (see User.isEnabled()). This endpoint lets an admin
-     *  flip that flag directly from the dashboard, toggling the
-     *  target user's ability to log in. Bound as a urlencoded form
-     *  post from a per-row form on the dashboard, redirecting back
-     *  once done.
+     *  Renders the reset form only when the emailed secret still
+     *  resolves to an unexpired user (see
+     *  AuthenticationService.resolvePasswordResetSecret()). An
+     *  invalid or expired secret isn't a 400 here - it's the same
+     *  page with an error alert instead of the form, pointing the
+     *  user back to /auth/forgot-password to request a new link.
      */
-    public String setAccountEnabled(@ModelAttribute SetAccountEnabledDto input)
+    public String resetPasswordPage(@PathVariable String secret, Model model)
     {
-        if (input.isEnabled()) {
-            authenticationService.setEmailAsVerified(input.getEmail());
-        } else {
-            authenticationService.setEmailAsNotVerified(input.getEmail());
+        Optional<User> userOpt = authenticationService.resolvePasswordResetSecret(secret);
+
+        model.addAttribute("secret", secret);
+        model.addAttribute("user", new ResetPasswordDto());
+        model.addAttribute("secretInvalid", userOpt.isEmpty());
+        model.addAttribute("resetSuccess", false);
+
+        return "reset-password-page";
+    }
+
+    @PostMapping("/reset-password/{secret}")
+    /*  Handles the password reset submission
+     *
+     *  Re-resolves the secret rather than trusting that the page was
+     *  rendered validly - the link could have expired or already been
+     *  used between the GET above and this submission. On success,
+     *  resetPassword() also burns the secret so the emailed link
+     *  can't be replayed.
+     */
+    public String resetPassword(@PathVariable String secret,
+                                 @Valid @ModelAttribute("user") ResetPasswordDto resetPasswordDto,
+                                 BindingResult bindingResult,
+                                 Model model)
+    {
+        model.addAttribute("secret", secret);
+        model.addAttribute("secretInvalid", false);
+        model.addAttribute("resetSuccess", false);
+
+        Optional<User> userOpt = authenticationService.resolvePasswordResetSecret(secret);
+
+        if (userOpt.isEmpty())
+        {
+            log.info("Password reset submitted for invalid or expired secret");
+            model.addAttribute("secretInvalid", true);
+            return "reset-password-page";
         }
 
-        return "redirect:/admin/dashboard";
+        if (bindingResult.hasErrors())
+        {
+            log.debug("Password reset rejected due to errors: {}", bindingResult.getAllErrors());
+            return "reset-password-page";
+        }
+
+        User user = userOpt.get();
+
+        authenticationService.resetPassword(user, resetPasswordDto.getPassword());
+
+        log.info("Password reset completed for user: {}", user.getEmail());
+
+        model.addAttribute("resetSuccess", true);
+
+        return "reset-password-page";
     }
+
 }

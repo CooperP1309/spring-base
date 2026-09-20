@@ -43,6 +43,29 @@ public class SMTPService
         return sendEmail(subject, body, receivingEmail);
     }
 
+    /*  Another wrapper function for sendEmail()
+     *
+     *  This function wraps sendEmail() with the intention of
+     *  building a body and subject specific to sending password
+     *  reset links.
+     */
+    public String sendPasswordResetLink(String verificationCode, String receivingEmail) 
+    {
+        
+        String base = verificationBaseUrl.endsWith("/")
+                ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
+                : verificationBaseUrl;
+                
+        String verificationLink = base + "/auth/reset-password/" + verificationCode;
+
+        String subject = "Reset your password";
+        String body =   "IGNORE IF YOU DIDN'T REQUEST A PASSWORD RESET!\n\n" +
+                        "To reset your password, click the link below:\n\n" +
+                        verificationLink;
+
+        return sendEmail(subject, body, receivingEmail);
+    }
+
     /*  Core email sending unit.
      *
      *  This is core interface for sending emails. It relies

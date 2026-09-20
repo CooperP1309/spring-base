@@ -1,22 +1,22 @@
 package com.anticipate.listr.jwt_handling.dtos;
 
-public class DeleteUserDto 
+public class ForgotPasswordDto
 {
 
     private String email;
 
-    public String getEmail() 
+    public String getEmail()
     {
         return email;
     }
 
-    public DeleteUserDto setEmail(String email) 
+    public ForgotPasswordDto setEmail(String email)
     {
         this.email = email;
         return this;
     }
 
-    public DeleteUserDto() 
+    public ForgotPasswordDto()
     {
 
     }

@@ -19,14 +19,5 @@
         <hr>
     </div>
 
-    <div sec:authorize="hasRole('USER')">
-        <hr>
-            <p> <!-- add a point to /leaders... for the manager role-->
-                <a th:href="@{/users/me}">USERS Meeting</a>
-                (Only for standard users)
-            </p>
-        <hr>
-    </div>
-
 </body>
 </html>

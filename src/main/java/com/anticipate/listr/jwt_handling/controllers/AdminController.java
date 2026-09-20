@@ -2,6 +2,8 @@ package com.anticipate.listr.jwt_handling.controllers;
 
 /* ===== local libs ===== */
 import com.anticipate.listr.jwt_handling.services.UserService;
+import com.anticipate.listr.jwt_handling.services.AuthenticationService;
+import com.anticipate.listr.jwt_handling.dtos.SetAccountEnabledDto;
 
 /* ===== spring libs ===== */
 import org.springframework.ui.Model;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.stereotype.Controller;
 
 /* ===== java libs =====*/
@@ -22,9 +25,12 @@ public class AdminController
 {
     private final UserService userService;
 
-    public AdminController(UserService userService)
+    private final AuthenticationService authenticationService;
+
+    public AdminController(UserService userService, AuthenticationService authenticationService)
     {
         this.userService = userService;
+        this.authenticationService = authenticationService;
     }
 
     @PostMapping("/delete-user/{userID}")
@@ -46,6 +52,27 @@ public class AdminController
         catch (NoSuchElementException e)
         {
             log.warn("Attempted to delete missing user with ID {}", userID);
+        }
+
+        return "redirect:/admin/dashboard";
+    }
+
+    @PostMapping("/set-account-enabled")
+    /*  Enables or disables a user account
+     *
+     *  A user account is considered "enabled" once its email is
+     *  verified (see User.isEnabled()). This endpoint lets an admin
+     *  flip that flag directly from the dashboard, toggling the
+     *  target user's ability to log in. Bound as a urlencoded form
+     *  post from a per-row form on the dashboard, redirecting back
+     *  once done.
+     */
+    public String setAccountEnabled(@ModelAttribute SetAccountEnabledDto input)
+    {
+        if (input.isEnabled()) {
+            authenticationService.setEmailAsVerified(input.getEmail());
+        } else {
+            authenticationService.setEmailAsNotVerified(input.getEmail());
         }
 
         return "redirect:/admin/dashboard";

@@ -31,7 +31,7 @@
             <td th:text="${user.emailVerified}"></td>
             <td th:text="${#dates.format(user.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
             <td th:if="${user.role.name() != 'ADMIN'}">
-                <form method="post" th:action="@{/auth/set-account-enabled}" style="display:inline">
+                <form method="post" th:action="@{/admin/set-account-enabled}" style="display:inline">
                     <input type="hidden" name="email" th:value="${user.email}" />
                     <input type="hidden" name="enabled" th:value="${!user.emailVerified}" />
                     <button type="submit" th:text="${user.emailVerified} ? 'Disable account' : 'Enable account'"></button>

@@ -1,4 +1,14 @@
 HIGH PRIORITY
+[X] EMERGENCY!!! setAccountEnabled() is currently hittable publicly!!!!! PLEASE DELEGATE THIS TO ADMIN ENDPOINT ONLY
+
+[X] DESTROY the userservice testing controller - Still exposes power endpoints to regular users
+
+[X] Implement redirect in global exception handler for invalid session token
+
+[ ] Ensure case insensitive email sign ups and sign ins
+
+[ ] Implement proper exception handling for smtp failures
+
 [ ] Make parent VerificationException class
 
 [X] Wipe accounts when verification link expires (only if not verified yet)
