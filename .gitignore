@@ -4,3 +4,8 @@ src/main/resources/application.properties
 
 # Maven
 .mvn/wrapper/maven-wrapper.jar
+
+# Security Audits
+SECURITY_AUDIT.md
+/.claude
+

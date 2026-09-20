@@ -269,6 +269,20 @@ public class AuthenticationController
          *  front end by thymeleaf. (see register-page.html for example)
          */
 
+        /*  Avoid leaking which emails are already registered (user
+         *  enumeration) - mirrors the same early-return pattern used in
+         *  forgotPassword() below. An existing account gets exactly the
+         *  same outcome shown to a genuine new signup, with no DB write
+         *  and no email sent.
+         */
+        if (userRepository.findByEmail(newUser.getEmail()).isPresent())
+        {
+            log.info("Registration attempted for already-registered email: {}", newUser.getEmail());
+            model.addAttribute("registrationSuccess", true);
+
+            return "register-page";
+        }
+
         // add user to db
         User registeredUser = null;
 
@@ -278,9 +292,13 @@ public class AuthenticationController
         }
         catch (DataIntegrityViolationException e)
         {
-            log.error("Registration failed for email: {}. Exception: {}", newUser.getEmail(), e.getMessage());
-            bindingResult.reject("registration.failed",
-                    "Internal error adding user details. Please contact the system administrator.");
+            /*  Only reachable via a race with a concurrent signup for the
+             *  same email landing between the check above and this save -
+             *  still must not reveal that outcome differently from a
+             *  normal success, for the same reason as the check above.
+             */
+            log.warn("Registration race detected for email: {}. Exception: {}", newUser.getEmail(), e.getMessage());
+            model.addAttribute("registrationSuccess", true);
 
             return "register-page";
         }
