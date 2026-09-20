@@ -92,10 +92,13 @@ public class GlobalExceptionHandler
             errorDetail.setProperty("description", "The JWT token has expired");
         }
 
-        if (errorDetail == null) 
+        if (errorDetail == null)
         {
+            // Log the real exception (message + stack trace) server-side only -
+            // the client only ever sees a fixed, generic message so internal
+            // details (library errors, field names, etc.) never leak out.
             log.error("Unexpected exception: {}", exception.getMessage(), exception);
-            errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(500), exception.getMessage());
+            errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(500), "Internal Server Error");
             errorDetail.setProperty("description", "Unknown internal server error.");
         }
 
