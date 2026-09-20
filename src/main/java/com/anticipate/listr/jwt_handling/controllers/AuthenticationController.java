@@ -6,7 +6,6 @@ import com.anticipate.listr.jwt_handling.dtos.LoginUserDto;
 import com.anticipate.listr.jwt_handling.dtos.RegisterUserDto;
 import com.anticipate.listr.jwt_handling.dtos.ForgotPasswordDto;
 import com.anticipate.listr.jwt_handling.dtos.ResetPasswordDto;
-import com.anticipate.listr.jwt_handling.dtos.SetAccountEnabledDto;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.services.JwtService;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
@@ -408,24 +407,4 @@ public class AuthenticationController
         return "reset-password-page";
     }
 
-    @PostMapping("/set-account-enabled")
-    /*  Enables or disables a user account
-     *
-     *  A user account is considered "enabled" once its email is
-     *  verified (see User.isEnabled()). This endpoint lets an admin
-     *  flip that flag directly from the dashboard, toggling the
-     *  target user's ability to log in. Bound as a urlencoded form
-     *  post from a per-row form on the dashboard, redirecting back
-     *  once done.
-     */
-    public String setAccountEnabled(@ModelAttribute SetAccountEnabledDto input)
-    {
-        if (input.isEnabled()) {
-            authenticationService.setEmailAsVerified(input.getEmail());
-        } else {
-            authenticationService.setEmailAsNotVerified(input.getEmail());
-        }
-
-        return "redirect:/admin/dashboard";
-    }
 }

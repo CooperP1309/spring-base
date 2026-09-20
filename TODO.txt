@@ -1,4 +1,8 @@
 HIGH PRIORITY
+[X] EMERGENCY!!! setAccountEnabled() is currently hittable publicly!!!!! PLEASE DELEGATE THIS TO ADMIN ENDPOINT ONLY
+
+[ ] Ensure case insensitive email sign ups and sign ins
+
 [ ] Implement proper exception handling for smtp failures
 
 [ ] Make parent VerificationException class
