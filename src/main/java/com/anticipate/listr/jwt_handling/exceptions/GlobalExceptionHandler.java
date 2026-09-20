@@ -20,8 +20,15 @@ import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 @Slf4j
-public class GlobalExceptionHandler 
+public class GlobalExceptionHandler
 {
+    private final JwtCookie jwtCookie;
+
+    public GlobalExceptionHandler(JwtCookie jwtCookie)
+    {
+        this.jwtCookie = jwtCookie;
+    }
+
     @ExceptionHandler(NoSuchElementException.class)
     public ProblemDetail handleNotFound(NoSuchElementException exception) 
     {
@@ -50,7 +57,7 @@ public class GlobalExceptionHandler
 
             return ResponseEntity.status(HttpStatusCode.valueOf(302))
                     .location(URI.create("/landing-page"))
-                    .header(HttpHeaders.SET_COOKIE, JwtCookie.clear().toString())
+                    .header(HttpHeaders.SET_COOKIE, jwtCookie.clear().toString())
                     .build();
         }
 

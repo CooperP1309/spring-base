@@ -248,6 +248,33 @@ while ($true) {
     Write-Host
 }
 
+# ---- Cookie Security ----
+Clear-Host
+Write-Host "--------- Cookie Security ---------"
+Write-Host
+Write-Host
+Write-Host "The login session cookie can be marked 'Secure', which tells browsers to"
+Write-Host "only ever send it over HTTPS. This is recommended whenever the server is"
+Write-Host "reachable over HTTPS - either directly, or behind a reverse proxy that"
+Write-Host "terminates TLS in front of it."
+Write-Host
+Write-Host "Answer 'n' if this deployment is only reachable over plain HTTP - for"
+Write-Host "example local development, or a local/LAN server with no HTTPS in front"
+Write-Host "of it. Answering 'y' in that case will silently break login: the browser"
+Write-Host "will refuse to send the cookie back, since the connection isn't HTTPS."
+Write-Host
+
+$jwt_cookie_secure = 'false'
+while ($true) {
+    $secureChoice = Read-Host "Will users always reach this server over HTTPS? (y/n)"
+    switch -Wildcard ($secureChoice.ToLower()) {
+        'y*' { $jwt_cookie_secure = 'true';  break }
+        'n*' { $jwt_cookie_secure = 'false'; break }
+        default { Write-Host "Please answer 'y' or 'n'." -ForegroundColor Red; continue }
+    }
+    break
+}
+
 # ---- Admin portal ----
 Clear-Host
 Write-Host "--------- Admin Portal Setup ---------"
@@ -277,6 +304,7 @@ Write-Host ("  {0,-26} {1}" -f "SMTP port:",               $smtp_port)
 Write-Host ("  {0,-26} {1}" -f "SMTP username:",           $smtp_username)
 Write-Host ("  {0,-26} {1}" -f "Sender email:",            $smtp_sender)
 Write-Host ("  {0,-26} {1}" -f "Public base URL:",         $verification_base_url)
+Write-Host ("  {0,-26} {1}" -f "Secure cookie (HTTPS-only):", $jwt_cookie_secure)
 Write-Host ("  {0,-26} {1}" -f "Admin portal email:",      $admin_email)
 Write-Host
 Write-Host "Note: All of the above (including passwords) is written in plain text to"
@@ -320,6 +348,13 @@ spring.jpa.open-in-view=false
 security.jwt.secret-key=$jwt_secret
 # 1h in millisecond
 security.jwt.expiration-time=3600000
+# Marks the jwt cookie Secure (HTTPS-only) so browsers refuse to send it over
+# plain HTTP. Only turn this on if the app is reachable exclusively over
+# HTTPS - directly, or via a reverse proxy that terminates TLS in front of
+# it. Leave false for local/LAN HTTP-only deployments and local development,
+# otherwise login will appear to silently fail (the browser will not send
+# the cookie back at all).
+security.jwt.cookie.secure=$jwt_cookie_secure
 
 # SMTP server config
 smtp.sender.email=$smtp_sender
