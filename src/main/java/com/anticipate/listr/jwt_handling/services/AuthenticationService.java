@@ -197,13 +197,8 @@ public class AuthenticationService
 
         User user = userOpt.get();
 
-        log.info("Password reset secret '{}' matched user '{}', resetSecretGeneratedAt={}",
-                secret, user.getEmail(), user.getResetSecretGeneratedAt());
-
         if (isExpired(user.getResetSecretGeneratedAt()))
         {
-            log.info("Password reset secret expired for user '{}': resetSecretGeneratedAt={}, now={}",
-                    user.getEmail(), user.getResetSecretGeneratedAt(), java.time.Instant.now());
             return Optional.empty();
         }
 
