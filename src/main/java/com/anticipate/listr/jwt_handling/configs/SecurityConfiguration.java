@@ -3,11 +3,14 @@ package com.anticipate.listr.jwt_handling.configs;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -16,7 +19,8 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfiguration 
+@EnableMethodSecurity
+public class SecurityConfiguration
 {
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -34,10 +38,19 @@ public class SecurityConfiguration
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception 
     {
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(new CookieCsrfTokenRepository())
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/js/**", "/css/**", "/images/**", "/webjars/**", "/favicon.ico").permitAll()
-                .requestMatchers("/auth/**", "/", "/landing-page").permitAll()
+                .requestMatchers("/", "/landing-page").permitAll()
+                .requestMatchers(
+                    "/auth/login", "/auth/login-page",
+                    "/auth/register", "/auth/register-page",
+                    "/auth/forgot-password",
+                    "/auth/verify/**", "/auth/reset-password/**"
+                ).permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

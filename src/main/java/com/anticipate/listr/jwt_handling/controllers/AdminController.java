@@ -6,6 +6,7 @@ import com.anticipate.listr.jwt_handling.services.AuthenticationService;
 import com.anticipate.listr.jwt_handling.dtos.SetAccountEnabledDto;
 
 /* ===== spring libs ===== */
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,9 +19,18 @@ import org.springframework.stereotype.Controller;
 import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
 
+/*  Defense-in-depth: every method here is also gated by the /admin/**
+ *  rule in SecurityConfiguration, but that's a single URL-pattern check.
+ *  This class-level @PreAuthorize is a second, independent mechanism
+ *  (an AOP proxy checking the authenticated principal directly) that
+ *  still holds even if the routing-level rule is ever misconfigured -
+ *  exactly the class of mistake that publicly exposed setAccountEnabled()
+ *  before it was moved onto this controller.
+ */
 @RequestMapping("/admin")
 @Controller
 @Slf4j
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController
 {
     private final UserService userService;
