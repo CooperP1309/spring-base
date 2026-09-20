@@ -1,4 +1,8 @@
 HIGH PRIORITY
+[ ] Make stack traces in server logs shortened
+
+[ ] Logout and token revoking
+
 [X] EMERGENCY!!! setAccountEnabled() is currently hittable publicly!!!!! PLEASE DELEGATE THIS TO ADMIN ENDPOINT ONLY
 
 [X] DESTROY the userservice testing controller - Still exposes power endpoints to regular users

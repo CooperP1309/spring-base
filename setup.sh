@@ -265,6 +265,29 @@ while true; do
 done
 
 clear
+echo "--------- Cookie Security ---------"
+echo
+echo
+echo "The login session cookie can be marked 'Secure', which tells browsers to"
+echo "only ever send it over HTTPS. This is recommended whenever the server is"
+echo "reachable over HTTPS - either directly, or behind a reverse proxy that"
+echo "terminates TLS in front of it."
+echo
+echo "Answer 'n' if this deployment is only reachable over plain HTTP - for"
+echo "example local development, or a local/LAN server with no HTTPS in front"
+echo "of it. Answering 'y' in that case will silently break login: the browser"
+echo "will refuse to send the cookie back, since the connection isn't HTTPS."
+echo
+while true; do
+    read -rp "Will users always reach this server over HTTPS? (y/n): " secure_cookie_choice
+    case "$secure_cookie_choice" in
+        [Yy]* ) jwt_cookie_secure=true; break;;
+        [Nn]* ) jwt_cookie_secure=false; break;;
+        * ) echo "Please answer 'y' or 'n'." >&2;;
+    esac
+done
+
+clear
 echo "--------- Admin Portal Setup ---------"
 echo
 echo
@@ -293,6 +316,7 @@ printf '  %-26s %s\n' "SMTP port:" "$smtp_port"
 printf '  %-26s %s\n' "SMTP username:" "$smtp_username"
 printf '  %-26s %s\n' "Sender email:" "$smtp_sender"
 printf '  %-26s %s\n' "Public base URL:" "$verification_base_url"
+printf '  %-26s %s\n' "Secure cookie (HTTPS-only):" "$jwt_cookie_secure"
 printf '  %-26s %s\n' "Admin portal email:" "$admin_email"
 echo
 echo "Note: All of the above (including passwords) is written in plain text to"
@@ -328,6 +352,13 @@ spring.jpa.open-in-view=false
 security.jwt.secret-key=$jwt_secret
 # 1h in millisecond
 security.jwt.expiration-time=3600000
+# Marks the jwt cookie Secure (HTTPS-only) so browsers refuse to send it over
+# plain HTTP. Only turn this on if the app is reachable exclusively over
+# HTTPS - directly, or via a reverse proxy that terminates TLS in front of
+# it. Leave false for local/LAN HTTP-only deployments and local development,
+# otherwise login will appear to silently fail (the browser will not send
+# the cookie back at all).
+security.jwt.cookie.secure=$jwt_cookie_secure
 
 # SMTP server config
 smtp.sender.email=$smtp_sender

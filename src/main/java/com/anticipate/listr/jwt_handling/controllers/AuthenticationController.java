@@ -54,16 +54,20 @@ public class AuthenticationController
 
     private final SMTPService smtpService;
 
-    public AuthenticationController(JwtService jwtService, 
-                                    AuthenticationService authenticationService, 
+    private final JwtCookie jwtCookie;
+
+    public AuthenticationController(JwtService jwtService,
+                                    AuthenticationService authenticationService,
                                     UserRepository userRepository,
-                                    SMTPService smtpService) 
+                                    SMTPService smtpService,
+                                    JwtCookie jwtCookie)
     {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
         this.emailValidator = EmailValidator.getInstance();
         this.userRepository = userRepository;
         this.smtpService = smtpService;
+        this.jwtCookie = jwtCookie;
     }
 
     @PostMapping("/login")
@@ -109,7 +113,7 @@ public class AuthenticationController
 
         String jwtToken = jwtService.generateToken(authenticatedUser);
 
-        String cookie = JwtCookie.create(jwtToken, jwtService.getExpirationTime()).toString();
+        String cookie = jwtCookie.create(jwtToken, jwtService.getExpirationTime()).toString();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie);
 

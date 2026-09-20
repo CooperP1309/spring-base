@@ -2,6 +2,7 @@ package com.anticipate.listr.jwt_handling.controllers;
 
 import com.anticipate.listr.jwt_handling.dtos.ForgotPasswordDto;
 import com.anticipate.listr.jwt_handling.dtos.ResetPasswordDto;
+import com.anticipate.listr.jwt_handling.configs.JwtCookie;
 import com.anticipate.listr.jwt_handling.entities.User;
 import com.anticipate.listr.jwt_handling.repositories.UserRepository;
 import com.anticipate.listr.jwt_handling.services.AuthenticationService;
@@ -41,6 +42,9 @@ class AuthenticationControllerTest
     @Mock
     private SMTPService smtpService;
 
+    @Mock
+    private JwtCookie jwtCookie;
+
     private AuthenticationController authenticationController;
 
     @BeforeEach
@@ -50,7 +54,8 @@ class AuthenticationControllerTest
                 jwtService,
                 authenticationService,
                 userRepository,
-                smtpService);
+                smtpService,
+                jwtCookie);
     }
 
     @Test
