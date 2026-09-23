@@ -77,14 +77,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String resolveToken(HttpServletRequest request) {
-    
-        // NOTE: Auth header still supported for API clients
-        final String authHeader = request.getHeader("Authorization");
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
-        }
-
+        // Cookie-only: an "Authorization: Bearer" path was previously
+        // accepted here for hypothetical API clients, but nothing in this
+        // app ever used it, and CsrfProtectionFilter treated its mere
+        // presence (unvalidated) as grounds to skip CSRF checks entirely -
+        // an easy, unused bypass. Removing it here removes the bypass at
+        // its root instead of trying to patch the skip condition.
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if (JwtCookie.NAME.equals(cookie.getName()) && !cookie.getValue().isEmpty()) {

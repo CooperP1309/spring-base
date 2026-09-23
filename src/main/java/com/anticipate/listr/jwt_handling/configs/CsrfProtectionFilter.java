@@ -31,9 +31,10 @@ import java.util.Set;
  *   - Not yet authenticated (login/register/forgot/reset-password forms)
  *     -> expected token is a short-lived anonymous cookie (AnonymousCsrfCookie),
  *     handed out the first time one of those pages is rendered.
- *   - Authenticated via an "Authorization: Bearer" header -> skipped
- *     entirely. Browsers never attach that header to a cross-site request
- *     on their own, so it isn't forgeable the way a cookie is.
+ *
+ *  There is no "Authorization: Bearer" exemption - JwtAuthenticationFilter
+ *  no longer accepts that header at all (cookie-only), since an unvalidated
+ *  header's mere presence was previously enough to skip this check entirely.
  *
  *  Either way, the resolved token is stashed on the request so
  *  CsrfModelAttributeAdvice can hand it to every view as ${csrfToken} for
@@ -71,12 +72,6 @@ public class CsrfProtectionFilter extends OncePerRequestFilter
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException
     {
-        if (isBearerAuthenticated(request))
-        {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         String jwtCookieValue = readCookie(request, JwtCookie.NAME);
         String expectedToken;
 
@@ -110,12 +105,6 @@ public class CsrfProtectionFilter extends OncePerRequestFilter
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private boolean isBearerAuthenticated(HttpServletRequest request)
-    {
-        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        return authHeader != null && authHeader.startsWith("Bearer ");
     }
 
     /*  Returns the existing anonymous token if the browser already has one,

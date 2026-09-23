@@ -57,7 +57,6 @@ class CsrfProtectionFilterTest
     void getRequest_withNoExistingAnonymousCookie_issuesOneAndStillProceeds() throws Exception
     {
         when(request.getMethod()).thenReturn("GET");
-        when(request.getHeader("Authorization")).thenReturn(null);
         when(request.getCookies()).thenReturn(null);
         when(secretGeneratorService.generateSecureSecret()).thenReturn("fresh-anon-token");
         when(anonymousCsrfCookie.create("fresh-anon-token"))
@@ -75,7 +74,6 @@ class CsrfProtectionFilterTest
     void postWithCookieAuth_whenSubmittedTokenMatchesJwtClaim_proceeds() throws Exception
     {
         when(request.getMethod()).thenReturn("POST");
-        when(request.getHeader("Authorization")).thenReturn(null);
         when(request.getCookies()).thenReturn(new Cookie[] { new Cookie(JwtCookie.NAME, "signed.jwt.value") });
         when(jwtService.extractCsrfToken("signed.jwt.value")).thenReturn("bound-csrf-token");
         when(request.getParameter("_csrf")).thenReturn("bound-csrf-token");
@@ -90,7 +88,6 @@ class CsrfProtectionFilterTest
     void postWithCookieAuth_whenSubmittedTokenDoesNotMatchJwtClaim_isRejected() throws Exception
     {
         when(request.getMethod()).thenReturn("POST");
-        when(request.getHeader("Authorization")).thenReturn(null);
         when(request.getCookies()).thenReturn(new Cookie[] { new Cookie(JwtCookie.NAME, "signed.jwt.value") });
         when(jwtService.extractCsrfToken("signed.jwt.value")).thenReturn("bound-csrf-token");
         when(request.getParameter("_csrf")).thenReturn("attacker-guessed-token");
@@ -105,7 +102,6 @@ class CsrfProtectionFilterTest
     void postWithNoCsrfCookieAndNoSubmittedToken_isRejected() throws Exception
     {
         when(request.getMethod()).thenReturn("POST");
-        when(request.getHeader("Authorization")).thenReturn(null);
         when(request.getCookies()).thenReturn(null);
         when(secretGeneratorService.generateSecureSecret()).thenReturn("brand-new-token");
         when(anonymousCsrfCookie.create("brand-new-token"))
@@ -118,15 +114,26 @@ class CsrfProtectionFilterTest
         verify(response).sendError(eq(HttpServletResponse.SC_FORBIDDEN), anyString());
     }
 
+    /*  Regression guard for the pentest finding: this filter must not grant
+     *  any exemption based on an "Authorization" header. Presence of such a
+     *  header is not consulted at all any more - JwtAuthenticationFilter is
+     *  cookie-only - so a request with no matching csrf cookie/token is
+     *  still rejected, and the header is never even read.
+     */
     @Test
-    void bearerAuthenticatedRequest_skipsCsrfValidationEntirely() throws Exception
+    void authorizationHeaderIsNeverConsulted_andDoesNotBypassValidation() throws Exception
     {
-        when(request.getHeader("Authorization")).thenReturn("Bearer some.api.token");
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getCookies()).thenReturn(null);
+        when(secretGeneratorService.generateSecureSecret()).thenReturn("brand-new-token");
+        when(anonymousCsrfCookie.create("brand-new-token"))
+                .thenReturn(ResponseCookie.from(AnonymousCsrfCookie.NAME, "brand-new-token").build());
+        when(request.getParameter("_csrf")).thenReturn(null);
 
         filter.doFilterInternal(request, response, filterChain);
 
-        verify(filterChain).doFilter(request, response);
-        verify(response, never()).sendError(anyInt(), anyString());
-        verify(jwtService, never()).extractCsrfToken(anyString());
+        verify(request, never()).getHeader(anyString());
+        verify(filterChain, never()).doFilter(any(), any());
+        verify(response).sendError(eq(HttpServletResponse.SC_FORBIDDEN), anyString());
     }
 }

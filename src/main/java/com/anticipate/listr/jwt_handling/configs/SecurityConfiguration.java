@@ -73,9 +73,12 @@ public class SecurityConfiguration
     {
         CorsConfiguration configuration = new CorsConfiguration();
 
+        // No "Authorization" header here - authentication is cookie-only
+        // (see JwtAuthenticationFilter); allowing it back in would reopen
+        // the unvalidated-header CSRF bypass that was just removed.
         configuration.setAllowedOrigins(List.of("http://localhost:8005"));
         configuration.setAllowedMethods(List.of("GET","POST"));
-        configuration.setAllowedHeaders(List.of("Authorization","Content-Type"));
+        configuration.setAllowedHeaders(List.of("Content-Type"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
