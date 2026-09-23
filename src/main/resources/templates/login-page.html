@@ -8,6 +8,8 @@
 
 <form th:action="@{/auth/login}" th:object="${user}" method="post">
 
+    <input type="hidden" name="_csrf" th:value="${csrfToken}" />
+
     <!-- Global (non-field) errors -->
     <div th:if="${#fields.hasGlobalErrors()}">
         <p th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>

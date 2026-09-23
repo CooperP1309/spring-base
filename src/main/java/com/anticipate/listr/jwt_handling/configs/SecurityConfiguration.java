@@ -22,20 +22,26 @@ public class SecurityConfiguration
 {
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CsrfProtectionFilter csrfProtectionFilter;
 
     public SecurityConfiguration(
         JwtAuthenticationFilter jwtAuthenticationFilter,
+        CsrfProtectionFilter csrfProtectionFilter,
         AuthenticationProvider authenticationProvider
-    ) 
+    )
     {
         this.authenticationProvider = authenticationProvider;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.csrfProtectionFilter = csrfProtectionFilter;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception 
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
         http
+            // Spring Security's own CSRF machinery stays disabled - CSRF
+            // protection here is the custom, JWT-bound CsrfProtectionFilter
+            // added below instead (see its class comment for why).
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/js/**", "/css/**", "/images/**", "/webjars/**", "/favicon.ico").permitAll()
@@ -53,7 +59,11 @@ public class SecurityConfiguration
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authenticationProvider(authenticationProvider)
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            // Runs after JwtAuthenticationFilter so the jwt cookie (if any)
+            // has already been validated and the request rejected upstream
+            // if it wasn't - this filter can trust a present cookie value.
+            .addFilterAfter(csrfProtectionFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

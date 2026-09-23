@@ -18,15 +18,32 @@ import org.springframework.stereotype.Service;
 @Service
 public class JwtService
 {
+    // Claim name carrying the per-login CSRF token (see CsrfProtectionFilter).
+    // Binding it into the JWT means it rotates with every login and never
+    // needs its own server-side storage despite the app being stateless.
+    private static final String CSRF_CLAIM = "csrf";
+
+    private final SecretGeneratorService secretGeneratorService;
+
     @Value("${security.jwt.secret-key}")
     private String secretKey;
 
     @Value("${security.jwt.expiration-time}")
     private long jwtExpiration;
 
-    public String extractUsername(String token) 
+    public JwtService(SecretGeneratorService secretGeneratorService)
+    {
+        this.secretGeneratorService = secretGeneratorService;
+    }
+
+    public String extractUsername(String token)
     {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractCsrfToken(String token)
+    {
+        return extractClaim(token, claims -> claims.get(CSRF_CLAIM, String.class));
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver)
@@ -37,7 +54,10 @@ public class JwtService
 
     public String generateToken(UserDetails userDetails)
     {
-        return generateToken(new HashMap<>(), userDetails);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(CSRF_CLAIM, secretGeneratorService.generateSecureSecret());
+
+        return generateToken(claims, userDetails);
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails)
