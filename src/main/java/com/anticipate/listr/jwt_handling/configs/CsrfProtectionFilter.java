@@ -19,29 +19,24 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Set;
 
-/*  Synchronizer-token CSRF defence, sized to match this app: every request
- *  is server-rendered, submitted forms only, no JS/AJAX. Rather than a
- *  general-purpose double-submit cookie (Spring's CookieCsrfTokenRepository,
- *  tried and reverted earlier on this branch), the expected token is
- *  derived from whatever already authenticates the request:
- *
- *   - Authenticated via the "jwt" cookie -> expected token is the "csrf"
- *     claim embedded in that same JWT (see JwtService). Nothing extra to
- *     store; it rotates automatically with every login.
- *   - Not yet authenticated (login/register/forgot/reset-password forms)
- *     -> expected token is a short-lived anonymous cookie (AnonymousCsrfCookie),
- *     handed out the first time one of those pages is rendered.
- *
- *  There is no "Authorization: Bearer" exemption - JwtAuthenticationFilter
- *  no longer accepts that header at all (cookie-only), since an unvalidated
- *  header's mere presence was previously enough to skip this check entirely.
- *
- *  Either way, the resolved token is stashed on the request so
- *  CsrfModelAttributeAdvice can hand it to every view as ${csrfToken} for
- *  forms to embed as a hidden "_csrf" field.
- */
 @Slf4j
 @Component
+/*  NOTE TO SELF FOR CUSTOM FILTER CLASSES
+ *  
+ *  This class inherits the "abstract" doInternalFilter() function from 
+ *  OncePerRequestFilter. Abstract is a keyword in defining the function. 
+ *  It is literally written like so in the parent class:
+ * 
+ *      protected abstract void doFilterInternal(
+ *      HttpServletRequest request, HttpServletResponse response, FilterChain chain);
+ *       
+ *  In this class, we user "@override" to make our implementation of it. Our implementation
+ *  must AT LEAST adhere to the function signature. Otherwise, we're free to do what we want
+ *  with it.
+ * 
+ *  We could theoretically also make this class abstract and add aditional abstract functions.
+ *  But the first non abstract child class inheriting doInternalFilter() MUST properly define it. 
+ */ 
 public class CsrfProtectionFilter extends OncePerRequestFilter
 {
     public static final String REQUEST_ATTRIBUTE = "csrfToken";
@@ -72,14 +67,20 @@ public class CsrfProtectionFilter extends OncePerRequestFilter
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException
     {
+        /*  readCookie() literally extracts the cookie value from
+         *  the intercepted http request passed from the spring security filter
+         *  (Assuming the name matches that in jwtCookie.Name)
+         */
         String jwtCookieValue = readCookie(request, JwtCookie.NAME);
         String expectedToken;
 
         if (jwtCookieValue != null)
         {
-            // A malformed/expired jwt cookie would already have been rejected
-            // upstream by JwtAuthenticationFilter, which stops the chain
-            // before this filter ever runs - safe to trust it here.
+            /*  This validation proceeds the jwt token validation. 
+             *  Hence, we can assume a non-malformed token by this point.
+             *
+             *  See JwtService for documentation on how the below works.
+             */
             expectedToken = jwtService.extractCsrfToken(jwtCookieValue);
         }
         else
@@ -89,14 +90,26 @@ public class CsrfProtectionFilter extends OncePerRequestFilter
 
         request.setAttribute(REQUEST_ATTRIBUTE, expectedToken);
 
+        // exit early if GET request
         if (SAFE_METHODS.contains(request.getMethod()))
         {
             filterChain.doFilter(request, response);
             return;
         }
 
+        /*  NOTE FOR FUTURE ME: 
+         *  When a POST action sends over the csrf token, the token
+         *  is sent in the body of the form-urlencoded request
+         *  
+         *  Because it's a form encoded body, req.getParam() here reads
+         *  BOTH the url params and the body. They both match the formatting:
+         *  "email=...&password=...&_csrf..."
+         */
         String submittedToken = request.getParameter(FORM_FIELD);
 
+        /*  the final step... 
+         *  checking that the csrf token from the form matches that of the jwt payload
+         */
         if (!tokensMatch(expectedToken, submittedToken))
         {
             log.warn("CSRF token missing or invalid for {} {}", request.getMethod(), request.getRequestURI());

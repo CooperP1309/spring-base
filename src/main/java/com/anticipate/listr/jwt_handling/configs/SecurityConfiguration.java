@@ -36,14 +36,21 @@ public class SecurityConfiguration
     }
 
     @Bean
+    /*  Configuration of the Security Filter Chain
+     *
+     *  This repo uses jwt session token cookies for authorisation.  
+     *  For csrf protection for the cookie implementation, this uses a
+     *  non spring native csrf token implementaion.
+     *  Hence, explicitly I've explicitly disabled it the spring native csrf protection.
+     *  Csrf validation comes after jwt token validation (see end of chain)
+     */
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
         http
-            // Spring Security's own CSRF machinery stays disabled - CSRF
-            // protection here is the custom, JWT-bound CsrfProtectionFilter
-            // added below instead (see its class comment for why).
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                
+                // keeping js matchers incase we want I need them for a future project
                 .requestMatchers("/js/**", "/css/**", "/images/**", "/webjars/**", "/favicon.ico").permitAll()
                 .requestMatchers("/", "/landing-page").permitAll()
                 .requestMatchers(
@@ -60,22 +67,22 @@ public class SecurityConfiguration
             )
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            // Runs after JwtAuthenticationFilter so the jwt cookie (if any)
-            // has already been validated and the request rejected upstream
-            // if it wasn't - this filter can trust a present cookie value.
             .addFilterAfter(csrfProtectionFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
+    /*  Cors config (duh)
+     *  
+     *  Explicitly left out auth headers to harden the csrf protected cookie route.
+     *  (Even though auth headers aren't prone to csrf)
+     *  This is just to enforce uniformity in how authentication is implemented.
+     */
     CorsConfigurationSource corsConfigurationSource() 
     {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // No "Authorization" header here - authentication is cookie-only
-        // (see JwtAuthenticationFilter); allowing it back in would reopen
-        // the unvalidated-header CSRF bypass that was just removed.
         configuration.setAllowedOrigins(List.of("http://localhost:8005"));
         configuration.setAllowedMethods(List.of("GET","POST"));
         configuration.setAllowedHeaders(List.of("Content-Type"));
