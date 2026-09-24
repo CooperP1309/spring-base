@@ -18,15 +18,51 @@ import org.springframework.stereotype.Service;
 @Service
 public class JwtService
 {
+    // Claim name carrying the per-login CSRF token (see CsrfProtectionFilter).
+    // Binding it into the JWT means it rotates with every login and never
+    // needs its own server-side storage despite the app being stateless.
+    private static final String CSRF_CLAIM = "csrf";
+
+    private final SecretGeneratorService secretGeneratorService;
+
     @Value("${security.jwt.secret-key}")
     private String secretKey;
 
     @Value("${security.jwt.expiration-time}")
     private long jwtExpiration;
 
-    public String extractUsername(String token) 
+    public JwtService(SecretGeneratorService secretGeneratorService)
+    {
+        this.secretGeneratorService = secretGeneratorService;
+    }
+
+    public String extractUsername(String token)
     {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    /*  FIRSTLY UNDERSTAND WHAT A CLAIM IS:
+     *  A claim is a key value pair that's apart of the signed payload
+     *  in a jwt token.
+     * 
+     *  For extractCsrfToken(), this is the exact call order:
+     *  
+     *  called: extractCsrfToken()
+     *  - Because the 2nd param is a lambda, a function object is created (BUT NOT YET RAN!!)
+     *      
+     *      called: Claims = extractAllClaims()
+     *      - In this function, all of the claims in the jwt token are extracted and verified (e.g. expiry,...)
+     *      - If a claim in the payload isn't valid, exception is thrown, execution stops here 
+     *      
+     *      But why have a lambda? Why not just return claims.get(....) from extractClaim()?
+     *  
+     *      If you look closely at other function in this class, you'll notice that extractClaim()
+     *      is used to extract claims other than the csrf claim. By having a lamba as an argument for
+     *      this function, we can enforce reusability of extractClaim() for any claim we need.
+     */
+    public String extractCsrfToken(String token)
+    {
+        return extractClaim(token, claims -> claims.get(CSRF_CLAIM, String.class));
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver)
@@ -37,7 +73,10 @@ public class JwtService
 
     public String generateToken(UserDetails userDetails)
     {
-        return generateToken(new HashMap<>(), userDetails);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(CSRF_CLAIM, secretGeneratorService.generateSecureSecret());
+
+        return generateToken(claims, userDetails);
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails)
