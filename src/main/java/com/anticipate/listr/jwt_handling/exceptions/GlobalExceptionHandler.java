@@ -101,10 +101,7 @@ public class GlobalExceptionHandler
 
         if (errorDetail == null)
         {
-            // Log the real exception (message + stack trace) server-side only -
-            // the client only ever sees a fixed, generic message so internal
-            // details (library errors, field names, etc.) never leak out.
-            log.error("Unexpected exception: {}", exception.getMessage(), exception);
+            log.error("Unexpected exception: {}", exception.getMessage());
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(500), "Internal Server Error");
             errorDetail.setProperty("description", "Unknown internal server error.");
         }
