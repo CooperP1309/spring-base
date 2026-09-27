@@ -28,23 +28,25 @@ Maven itself does not need to be installed — the bundled `mvnw` / `mvnw.cmd` w
    ```
 2. Run the setup script:
    ```powershell
-   .\setup_server.ps1
+   .\setup.ps1
    ```
    This walks you through the JWT secret, database container name/password, server and MySQL ports, SMTP details, public base URL, and admin portal credentials, then writes `src/main/resources/application.properties` and deploys the MySQL container. For the SMTP prompts, see [Setting up your SMTP](#setting-up-your-smtp) below.
 3. Start the server:
    ```powershell
-   .\start_server.ps1
+   .\start.ps1
    ```
+Important! If you get *RenameItemIOError,Microsoft.PowerShell.Commands.RenameItemCommand ECHO is on. Cannot start maven from wrapper*
+try running from an administrator powershell windows (just for the first startup).
 
 ## Usage on Linux
 
 1. Make the scripts executable (one-time):
    ```bash
-   chmod +x setup_server.sh start_server.sh mvnw
+   chmod +x setup.sh start.sh mvnw
    ```
 2. Run the setup script:
    ```bash
-   ./setup_server.sh
+   ./setup.sh
    ```
    Same as above, this configures the database, ports, SMTP, public base URL, and admin credentials, then writes `application.properties` and deploys the MySQL container. For the SMTP prompts, see [Setting up your SMTP](#setting-up-your-smtp) below.
 3. Start the server:
