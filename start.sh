@@ -75,6 +75,7 @@ if docker info >/dev/null 2>&1; then
     echo "Docker daemon is running."
 else
     echo "Docker daemon is NOT running."
+    echo "(Or the install requires sudo... Or it's broken)"
     exit 1
 fi
 
