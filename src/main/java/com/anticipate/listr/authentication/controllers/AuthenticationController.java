@@ -1,0 +1,432 @@
+package com.anticipate.listr.authentication.controllers;
+
+/* ===== local libs ===== */
+import com.anticipate.listr.authentication.entities.User;
+import com.anticipate.listr.authentication.dtos.LoginUserDto;
+import com.anticipate.listr.authentication.dtos.RegisterUserDto;
+import com.anticipate.listr.authentication.dtos.ForgotPasswordDto;
+import com.anticipate.listr.authentication.dtos.ResetPasswordDto;
+import com.anticipate.listr.authentication.services.AuthenticationService;
+import com.anticipate.listr.authentication.services.JwtService;
+import com.anticipate.listr.authentication.repositories.UserRepository;
+import com.anticipate.listr.authentication.services.SMTPService;
+import com.anticipate.listr.authentication.exceptions.ExpiredVerificationException;
+import com.anticipate.listr.authentication.exceptions.InvalidVerificationException;
+
+/* ===== spring libs ===== */
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import com.anticipate.listr.authentication.configs.JwtCookie;
+import org.springframework.security.authentication.AccountStatusException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.stereotype.Controller;
+import org.apache.commons.validator.routines.EmailValidator;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.validation.BindingResult;
+
+/* ===== java libs =====*/
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import java.util.Optional;
+
+@RequestMapping("/auth")
+@Controller
+@Slf4j
+public class AuthenticationController 
+{
+
+    private final JwtService jwtService;
+    
+    private final AuthenticationService authenticationService;
+
+    private EmailValidator emailValidator;
+
+    private final UserRepository userRepository;
+
+    private final SMTPService smtpService;
+
+    private final JwtCookie jwtCookie;
+
+    public AuthenticationController(JwtService jwtService,
+                                    AuthenticationService authenticationService,
+                                    UserRepository userRepository,
+                                    SMTPService smtpService,
+                                    JwtCookie jwtCookie)
+    {
+        this.jwtService = jwtService;
+        this.authenticationService = authenticationService;
+        this.emailValidator = EmailValidator.getInstance();
+        this.userRepository = userRepository;
+        this.smtpService = smtpService;
+        this.jwtCookie = jwtCookie;
+    }
+
+    @PostMapping("/login")
+    /*  For authorizing user login credentials
+     *
+     *  This endpoint binds a standard urlencoded form post (the same
+     *  shape a plain HTML <form> submits) and authenticates the passed
+     *  login credentials, setting the JWT as an HttpOnly cookie and
+     *  redirecting to the home page. On failure, the login page is
+     *  redisplayed with an error, mirroring the register() pattern below.
+     */
+    public String authenticate(@ModelAttribute("user") LoginUserDto loginUserDto,
+                                BindingResult bindingResult,
+                                Model model,
+                                HttpServletResponse response)
+    {
+        if (bindingResult.hasErrors())
+        {
+            log.warn("Login request rejected due to errors: {}", bindingResult.getAllErrors());
+            return "login-page";
+        }
+
+        User authenticatedUser;
+
+        try
+        {
+            authenticatedUser = authenticationService.authenticate(loginUserDto);
+        }
+        catch (BadCredentialsException e)
+        {
+            log.warn("Login failed for email: {}", loginUserDto.getEmail());
+            bindingResult.reject("login.failed", "The email or password you entered is incorrect.");
+
+            return "login-page";
+        }
+        catch (AccountStatusException e)
+        {
+            log.warn("Login rejected for disabled account: {}", loginUserDto.getEmail());
+            bindingResult.reject("login.disabled", "This account is disabled. Please verify your email first.");
+
+            return "login-page";
+        }
+
+        String jwtToken = jwtService.generateToken(authenticatedUser);
+
+        String cookie = jwtCookie.create(jwtToken, jwtService.getExpirationTime()).toString();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie);
+
+        return "redirect:/home-page";
+    }
+
+    @GetMapping("/login-page")
+    /*  Presents a login form
+     *
+     *  This endpoint responds with a login form. The form posts
+     *  directly to the login endpoint above as a standard urlencoded
+     *  submission (no JS involved). Extra note, form has a signup
+     *  link which points to the /register-page endpoint.
+     */
+    public String loginPage(Model model) 
+    {
+        model.addAttribute("user", new LoginUserDto());
+
+        return "login-page";
+    }
+    
+    @GetMapping("/register-page")
+    /*  Presents the user registration page
+     *  
+     *  This form allows users to input their full name,
+     *  email and password in order to create a new account.
+     *  Once these details are submitted, the fields are passed
+     *  to /register where the registration pipeline is 
+     *  carried out.
+     */
+    public String registerPage(Model model) 
+    {
+        model.addAttribute("user", new RegisterUserDto());
+
+        return "register-page";
+    }
+
+    @GetMapping("/forgot-password")
+    /*  Presents the forgot password page
+     *
+     *  This form allows a user to submit the email address
+     *  associated with their account in order to kick off the
+     *  password reset pipeline.
+     */
+    public String forgotPasswordPage(Model model)
+    {
+        model.addAttribute("user", new ForgotPasswordDto());
+
+        return "forgot-password-page";
+    }
+
+    @PostMapping("/forgot-password")
+    /*  Handles the forgot password submission
+     *
+     *  Placeholder for the password reset pipeline. Looks up the
+     *  submitted email internally, but always returns the same
+     *  generic message regardless of whether an account was found -
+     *  this avoids leaking which emails are registered (user
+     *  enumeration).
+     */
+    public String forgotPassword(@ModelAttribute("user") ForgotPasswordDto forgotPasswordDto,
+                                  BindingResult bindingResult)
+    {
+        Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
+
+        if (existingUser.isEmpty())
+        {
+            log.info("Password reset requested for unregistered email: {}", forgotPasswordDto.getEmail());   
+            bindingResult.reject("password.reset.sent", "Password Reset link sent.");
+            return "forgot-password-page";
+        }
+
+        User user = existingUser.get();
+
+        if (!user.getEmailVerified())
+        {
+            log.info("Password reset requested for unverified email: {}", forgotPasswordDto.getEmail());   
+            bindingResult.reject("password.reset.sent", "Password Reset link sent.");
+            return "forgot-password-page";
+        }
+
+        log.info("Password reset requested for email: {}", forgotPasswordDto.getEmail());
+
+        String newSecret = authenticationService.setNewEmailSecret(user);
+
+        String result = smtpService.sendPasswordResetLink(newSecret, user.getEmail());
+
+        if (result.equals("Failure"))
+        {
+            bindingResult.reject("password.reset.sent", "Password Reset link failed to send. Please try again later.");
+            return "forgot-password-page";
+        }
+
+        bindingResult.reject("password.reset.sent", "Password Reset link sent.");
+
+        return "forgot-password-page";
+    }
+
+    @PostMapping("/register")
+    /*  
+    *   Encapsulates the entire registration process
+    *   
+    *   This function is responsible for the entire registration
+    *   pipeline. A new user goes in (contains email, full name and password).  
+    *   Immediately, the validity of the provided email is checked. If valid,
+    *   the user is added to the database, with a verified field set to false.
+    *   The sending of a verification email is triggered. The email in question
+    *   will contain a link that won't allow loggin in with the account 
+    *   until the link is opened.
+    */
+    public String register(@Valid @ModelAttribute("user") RegisterUserDto newUser,
+                           BindingResult bindingResult,
+                           Model model)
+    {
+        // validate email format and existence
+        if (!bindingResult.hasFieldErrors("email") && 
+            !this.emailValidator.isValid(newUser.getEmail()))
+        {
+            /* My first introduction to bindingResult
+             *
+             * Why we don't just add a string attribute to the model;
+             * - bindingResult is a Spring object that can be read by every downstream
+             *   Spring module
+             * - It can be used to resolve front end error messages without having to type
+             *   them each time.
+             *
+             * rejectValue() syntax:
+             * - field: the name of the field that has an error
+             * - errorCode: a code that can be used to resolve a custom defined error
+             *   message in "messages.properties"
+             * - defaultMessage: a default message to be used if no custom message is found
+             */
+            bindingResult.rejectValue("email", "email.invalid", "Invalid email provided.");
+            log.debug("Invalid email format provided during registration: {}", newUser.getEmail());
+        }
+
+        // bind all other errors to the result
+        if (bindingResult.hasErrors())
+        {
+            log.debug("Registration rejected due to errors: {}", bindingResult.getAllErrors());
+
+            return "register-page";
+        }
+
+        /*  Why are there two if gates for bindingResult?
+         *
+         *  The first gate checks against the email validator (a seperate module).
+         *  If it's a problem, the error is added to the binding result, but no rejection
+         *  of the registration is made yet.
+         * 
+         *  By the second gate, if there are any other errors at all, (automatically added
+         *  by the @Valid annotation (see user entity - password field) and by other means), 
+         *  we reject the registration.
+         * 
+         *  BindingResult sets errors through rejectValue() and reject() and gets errors 
+         *  through hasErrors() and getAllErrors(). The result of errors is reflected in the
+         *  front end by thymeleaf. (see register-page.html for example)
+         */
+
+        /*  Avoid leaking which emails are already registered (user
+         *  enumeration) - mirrors the same early-return pattern used in
+         *  forgotPassword() below. An existing account gets exactly the
+         *  same outcome shown to a genuine new signup, with no DB write
+         *  and no email sent.
+         */
+        if (userRepository.findByEmail(newUser.getEmail()).isPresent())
+        {
+            log.info("Registration attempted for already-registered email: {}", newUser.getEmail());
+            model.addAttribute("registrationSuccess", true);
+
+            return "register-page";
+        }
+
+        // add user to db
+        User registeredUser = null;
+
+        try
+        {
+            registeredUser = authenticationService.signup(newUser);
+        }
+        catch (DataIntegrityViolationException e)
+        {
+            /*  Only reachable via a race with a concurrent signup for the
+             *  same email landing between the check above and this save -
+             *  still must not reveal that outcome differently from a
+             *  normal success, for the same reason as the check above.
+             */
+            log.warn("Registration race detected for email: {}. Exception: {}", newUser.getEmail(), e.getMessage());
+            model.addAttribute("registrationSuccess", true);
+
+            return "register-page";
+        }
+
+        String result = smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(),
+                                                            registeredUser.getEmail());
+
+        log.info("Verification email status '{}': '{}'", newUser.getEmail(), result);
+
+        if (result.equals("Failure"))
+        {
+            // ensure to delete user from db so that they can reattempt later
+            userRepository.delete(registeredUser);
+            bindingResult.reject("verification.email.failed",
+                    "We couldn't send your verification email. Please try registering again.");
+
+            return "register-page";
+        }
+
+        log.info("User registered successfully: {}", newUser.getEmail());
+        model.addAttribute("registrationSuccess", true);
+
+        return "register-page";
+    }
+
+    @GetMapping("/verify/{secret}")
+    @ResponseBody
+    /*  The verification link endpoint
+     *  
+     *  When a secret is sent to this endpoint, the secret verified as
+     *  being linked to an existing user. From there, the users "verified"
+     *  field is set to true. This ultimately allows the logging in of that
+     *  user from there on out.
+     */
+    public ResponseEntity<String> verifySecret(@PathVariable String secret)
+    {
+        try 
+        {
+            authenticationService.verifyEmailSecret(secret);
+        }
+        catch (InvalidVerificationException e)
+        {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Verification Secret could not be found.");
+        }
+        catch (ExpiredVerificationException e)
+        {
+            // delete user if verification is expired
+            User expiredUser = e.getUser();
+            userRepository.delete(expiredUser);
+
+            return ResponseEntity
+                    .status(HttpStatus.GONE)
+                    .body("Email verification link has expired. Please register again to generate a new link.");
+        }
+
+        return ResponseEntity.ok("Email has been verified.");
+    }
+
+    @GetMapping("/reset-password/{secret}")
+    /*  Presents the password reset form
+     *
+     *  Renders the reset form only when the emailed secret still
+     *  resolves to an unexpired user (see
+     *  AuthenticationService.resolvePasswordResetSecret()). An
+     *  invalid or expired secret isn't a 400 here - it's the same
+     *  page with an error alert instead of the form, pointing the
+     *  user back to /auth/forgot-password to request a new link.
+     */
+    public String resetPasswordPage(@PathVariable String secret, Model model)
+    {
+        Optional<User> userOpt = authenticationService.resolvePasswordResetSecret(secret);
+
+        model.addAttribute("secret", secret);
+        model.addAttribute("user", new ResetPasswordDto());
+        model.addAttribute("secretInvalid", userOpt.isEmpty());
+        model.addAttribute("resetSuccess", false);
+
+        return "reset-password-page";
+    }
+
+    @PostMapping("/reset-password/{secret}")
+    /*  Handles the password reset submission
+     *
+     *  Re-resolves the secret rather than trusting that the page was
+     *  rendered validly - the link could have expired or already been
+     *  used between the GET above and this submission. On success,
+     *  resetPassword() also burns the secret so the emailed link
+     *  can't be replayed.
+     */
+    public String resetPassword(@PathVariable String secret,
+                                 @Valid @ModelAttribute("user") ResetPasswordDto resetPasswordDto,
+                                 BindingResult bindingResult,
+                                 Model model)
+    {
+        model.addAttribute("secret", secret);
+        model.addAttribute("secretInvalid", false);
+        model.addAttribute("resetSuccess", false);
+
+        Optional<User> userOpt = authenticationService.resolvePasswordResetSecret(secret);
+
+        if (userOpt.isEmpty())
+        {
+            log.info("Password reset submitted for invalid or expired secret");
+            model.addAttribute("secretInvalid", true);
+            return "reset-password-page";
+        }
+
+        if (bindingResult.hasErrors())
+        {
+            log.debug("Password reset rejected due to errors: {}", bindingResult.getAllErrors());
+            return "reset-password-page";
+        }
+
+        User user = userOpt.get();
+
+        authenticationService.resetPassword(user, resetPasswordDto.getPassword());
+
+        log.info("Password reset completed for user: {}", user.getEmail());
+
+        model.addAttribute("resetSuccess", true);
+
+        return "reset-password-page";
+    }
+
+}
