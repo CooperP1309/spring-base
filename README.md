@@ -76,7 +76,7 @@ After picking a provider, you'll enter the sender email address, SMTP username (
 
 The final component of password resetting and email verification is a **public base URL** — This is the start of the URL that specifies the HTTP scheme and the host. Example with `http://localhost:8005` as the "Public Base URL":
 
-
+<img width="594" height="263" alt="image" src="https://github.com/user-attachments/assets/c916bfff-65be-42e2-aa17-75e0e06882f1" />
 
 
 When in production, use `https://<your-domain>.com` or similar.
@@ -101,8 +101,9 @@ you answer yes to the "Cookie Security" part of the setup script.
 Furthermore, a typical deployment in this manner will often sit behind
 a proxy server. Running Caddy as your proxy server is an easy way to setup TLS termination for HTTPS.
 
-The configuration of such a Caddy File is as simple as this:
+The entire configuration of such a Caddy File is as simple as this:
 
+<img width="355" height="73" alt="image" src="https://github.com/user-attachments/assets/42618662-7122-4528-9ca9-27295837fbc5" />
 
 
 ### Restrictive Local Deployments
