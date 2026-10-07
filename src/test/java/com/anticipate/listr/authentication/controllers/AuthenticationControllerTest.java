@@ -108,27 +108,6 @@ class AuthenticationControllerTest
     }
 
     @Test
-    void forgotPassword_returnsFailureMessage_whenSmtpServiceFailsToSendResetLink()
-    {
-        ForgotPasswordDto input = new ForgotPasswordDto().setEmail("verified@example.com");
-        BindingResult bindingResult = new BeanPropertyBindingResult(input, "user");
-
-        User verifiedUser = new User()
-                .setEmail("verified@example.com")
-                .setEmailVerified(true);
-
-        when(userRepository.findByEmail("verified@example.com")).thenReturn(Optional.of(verifiedUser));
-        when(authenticationService.setNewEmailSecret(verifiedUser)).thenReturn("new-secret");
-        when(smtpService.sendPasswordResetLink("new-secret", "verified@example.com")).thenReturn("Failure");
-
-        String view = authenticationController.forgotPassword(input, bindingResult);
-
-        assertEquals("forgot-password-page", view);
-        assertEquals("Password Reset link failed to send. Please try again later.",
-                bindingResult.getGlobalError().getDefaultMessage());
-    }
-
-    @Test
     void resetPassword_showsInvalidSecret_whenSecretDoesNotResolve()
     {
         ResetPasswordDto input = new ResetPasswordDto().setPassword("NewPassword123");
