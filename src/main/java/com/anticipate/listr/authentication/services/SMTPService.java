@@ -4,8 +4,11 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Async;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class SMTPService 
 {
     @Value("${smtp.sender.email}")
@@ -21,13 +24,14 @@ public class SMTPService
         this.mailSender = mailSender;
     }
 
+    @Async
     /*  Wrapper function for sendEmail()
      *
      *  This function wraps sendEmail() with the intention of
      *  building a body and subject specific to sending verification
      *  links. 
      */
-    public String sendVerificationLink(String verificationCode, String receivingEmail) 
+    public void sendVerificationLink(String verificationCode, String receivingEmail) 
     {
         
         String base = verificationBaseUrl.endsWith("/")
@@ -40,18 +44,20 @@ public class SMTPService
                         "To complete your account setup, click the verification link below:\n\n" +
                         verificationLink;
 
-        return sendEmail(subject, body, receivingEmail);
+        sendEmail(subject, body, receivingEmail);
     }
 
+    @Async
     /*  Another wrapper function for sendEmail()
      *
      *  This function wraps sendEmail() with the intention of
      *  building a body and subject specific to sending password
-     *  reset links.
+     *  reset links. The function is called asynchronously and thus
+     *  must catch and handle exceptions interally rather than allowing
+     *  them to propogate.
      */
-    public String sendPasswordResetLink(String verificationCode, String receivingEmail) 
+    public void sendPasswordResetLink(String verificationCode, String receivingEmail) 
     {
-        
         String base = verificationBaseUrl.endsWith("/")
                 ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
                 : verificationBaseUrl;
@@ -63,7 +69,7 @@ public class SMTPService
                         "To reset your password, click the link below:\n\n" +
                         verificationLink;
 
-        return sendEmail(subject, body, receivingEmail);
+        sendEmail(subject, body, receivingEmail);
     }
 
     /*  Core email sending unit.
@@ -72,23 +78,21 @@ public class SMTPService
      *  on SimpleMailMessage and thus email formatting is very
      *  limited.
      */
-    public String sendEmail(String subject, String body, String receivingEmail) 
-    {
-                
+    public void sendEmail(String subject, String body, String receivingEmail) 
+    {    
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(this.senderEmail);
         message.setTo(receivingEmail);
         message.setSubject(subject);
         message.setText(body);
 
-        try 
+        try
         {
             mailSender.send(message);
-            return "Success"; 
         }
-        catch (Exception ex) 
+        catch (Exception e)
         {
-            return "Failure";
+            log.error("Sending email: {}", e.getMessage());
         }
     }
 }

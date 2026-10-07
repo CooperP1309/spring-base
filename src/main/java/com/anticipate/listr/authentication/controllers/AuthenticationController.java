@@ -168,7 +168,7 @@ public class AuthenticationController
     @PostMapping("/forgot-password")
     /*  Handles the forgot password submission
      *
-     *  Placeholder for the password reset pipeline. Looks up the
+     *  Endpoint for the password reset pipeline. Looks up the
      *  submitted email internally, but always returns the same
      *  generic message regardless of whether an account was found -
      *  this avoids leaking which emails are registered (user
@@ -190,7 +190,7 @@ public class AuthenticationController
 
         if (!user.getEmailVerified())
         {
-            log.info("Password reset requested for unverified email: {}", forgotPasswordDto.getEmail());   
+            log.info("Password reset requested for unverified email: {}", forgotPasswordDto.getEmail());
             bindingResult.reject("password.reset.sent", "Password Reset link sent.");
             return "forgot-password-page";
         }
@@ -199,13 +199,8 @@ public class AuthenticationController
 
         String newSecret = authenticationService.setNewEmailSecret(user);
 
-        String result = smtpService.sendPasswordResetLink(newSecret, user.getEmail());
-
-        if (result.equals("Failure"))
-        {
-            bindingResult.reject("password.reset.sent", "Password Reset link failed to send. Please try again later.");
-            return "forgot-password-page";
-        }
+        // async function (exceptions handled internally)
+        smtpService.sendPasswordResetLink(newSecret, user.getEmail());
 
         bindingResult.reject("password.reset.sent", "Password Reset link sent.");
 
@@ -307,20 +302,8 @@ public class AuthenticationController
             return "register-page";
         }
 
-        String result = smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(),
-                                                            registeredUser.getEmail());
-
-        log.info("Verification email status '{}': '{}'", newUser.getEmail(), result);
-
-        if (result.equals("Failure"))
-        {
-            // ensure to delete user from db so that they can reattempt later
-            userRepository.delete(registeredUser);
-            bindingResult.reject("verification.email.failed",
-                    "We couldn't send your verification email. Please try registering again.");
-
-            return "register-page";
-        }
+        // async function (exceptions handled internally)
+        smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(), registeredUser.getEmail());
 
         log.info("User registered successfully: {}", newUser.getEmail());
         model.addAttribute("registrationSuccess", true);
