@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.anticipate.listr.authentication.services.SMTPService;
 import org.springframework.web.bind.annotation.PathVariable;
 import java.util.Map;
+import java.util.HashMap;
 
 @RequestMapping("/")
 @Controller
@@ -88,7 +89,13 @@ public class HomeController
     @GetMapping("test-template-emails/{email}")
     public String testTemplateEmails(@PathVariable String email)
     {
-        Map<String, Object> emptyMap = Map.of();
+        Map<String, Object> emptyMap = new HashMap<>();
+
+        log.info("Made it this far!!!");
+
+        emptyMap.put("name", "Psy");
+
+        log.info("The map is updated");
 
         try 
         {
@@ -96,9 +103,9 @@ public class HomeController
         }
         catch (Exception e)
         {
-            
+            log.error("{}", e.getMessage());    
         }
 
-        return "Check your inbox for the email :)";
+        return "home-page";
     }
 }
