@@ -5,7 +5,11 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Async;
-import org.thymeleaf.TemplateEngine;   
+import org.thymeleaf.TemplateEngine;
+import org.springframework.mail.javamail.MimeMessageHelper;   
+import jakarta.mail.internet.MimeMessage;
+import org.thymeleaf.context.Context;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -50,6 +54,7 @@ public class SMTPService
 
         sendEmail(subject, body, receivingEmail);
     }
+
 
     @Async
     /*  Another wrapper function for sendEmail()
@@ -98,5 +103,28 @@ public class SMTPService
         {
             log.error("Sending email: {}", e.getMessage());
         }
+    }
+
+
+    /* Test function for template based emails
+     *
+     */
+    public void sendTemplateEmail(String to, String subject, Map<String, Object> variables) throws Exception
+    {
+        // 1. Process Template
+        Context context = new Context();
+        context.setVariables(variables);
+        String htmlContent = templateEngine.process("email-template", context);
+
+        // 2. Build MimeMessage
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(htmlContent, true); // true indicates HTML content
+
+        // 3. Send
+        mailSender.send(message);
     }
 }
