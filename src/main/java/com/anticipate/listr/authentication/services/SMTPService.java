@@ -5,6 +5,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Async;
+import org.thymeleaf.TemplateEngine;   
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -19,9 +20,12 @@ public class SMTPService
 
     private JavaMailSender mailSender;
 
-    public SMTPService(JavaMailSender mailSender) 
+    private TemplateEngine templateEngine;
+
+    public SMTPService(JavaMailSender mailSender, TemplateEngine templateEngine) 
     {
         this.mailSender = mailSender;
+        this.templateEngine = templateEngine;
     }
 
     @Async
