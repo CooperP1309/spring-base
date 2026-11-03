@@ -99,7 +99,7 @@ public class HomeController
 
         try 
         {
-            mailer.sendTemplateEmail(email, "TEST TEMPLATE EMAIL", emptyMap);
+            mailer.sendTestTemplateEmail(email, "TEST TEMPLATE EMAIL", emptyMap);
         }
         catch (Exception e)
         {

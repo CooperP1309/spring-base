@@ -10,6 +10,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import jakarta.mail.internet.MimeMessage;
 import org.thymeleaf.context.Context;
 import java.util.Map;
+import java.util.HashMap;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -31,6 +32,55 @@ public class SMTPService
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
     }
+
+    @Async
+    /*  Sending of Password Reset Email
+     *
+     *  Using thymleaf TemplateEngine, this unit
+     *  handles the packing and sending of a password reset email
+     *  with HTML.
+     */
+    public void sendPasswordResetEmail(String to, String verificationCode) throws Exception
+    {
+        // Build the password reset link
+        String base = verificationBaseUrl.endsWith("/")
+        ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
+        : verificationBaseUrl;
+                
+        String passwordResetLink = base + "/auth/reset-password/" + verificationCode;
+        
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("passwordResetLink", passwordResetLink);
+        
+        // Build the template with Thymeleaf's Template Engine
+        Context context = new Context();
+        context.setVariables(variables);
+        String htmlContent = templateEngine.process("email/password-reset", context);
+
+        // Init and send off message
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        
+        helper.setTo(to);
+        helper.setSubject("Password Reset");
+        helper.setText(htmlContent, true);
+
+        mailSender.send(message);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* LEGACY IMPLEMENTATION */
 
     @Async
     /*  Wrapper function for sendEmail()
@@ -109,12 +159,12 @@ public class SMTPService
     /* Test function for template based emails
      *
      */
-    public void sendTemplateEmail(String to, String subject, Map<String, Object> variables) throws Exception
+    public void sendTestTemplateEmail(String to, String subject, Map<String, Object> variables) throws Exception
     {
         // 1. Process Template
         Context context = new Context();
         context.setVariables(variables);
-        String htmlContent = templateEngine.process("email-template", context);
+        String htmlContent = templateEngine.process("email/email-template", context);
 
         // 2. Build MimeMessage
         MimeMessage message = mailSender.createMimeMessage();
