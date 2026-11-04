@@ -233,7 +233,7 @@ Write-Host "The verification path is appended automatically; enter only the prot
 Write-Host "and host (no trailing path). For example:"
 Write-Host
 Write-Host "    http://123.45.67.89"
-Write-Host "    https://listr.example.com"
+Write-Host "    https://app.example.com"
 Write-Host
 Write-Host "If you are testing locally, you can use:"
 Write-Host

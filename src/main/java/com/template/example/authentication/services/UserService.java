@@ -1,0 +1,47 @@
+package com.template.example.authentication.services;
+
+import com.template.example.authentication.entities.User;
+import com.template.example.authentication.repositories.UserRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+
+@Service
+public class UserService 
+{
+    private final UserRepository userRepository;
+
+    public UserService(UserRepository userRepository)
+    {
+        this.userRepository = userRepository;
+    }
+
+    public List<User> allUsers() 
+    {
+        List<User> users = new ArrayList<>();
+
+        userRepository.findAll().forEach(users::add);
+
+        return users;
+    }
+
+    public void deleteUser(Integer userID) 
+    {
+        User user = userRepository.findById(userID)
+                .orElseThrow(() -> new NoSuchElementException("No user found with ID: " + userID));
+        
+        userRepository.delete(user);
+    }
+
+    @Transactional
+    public void deleteByEmail(String email) 
+    {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NoSuchElementException("No user found with email: " + email));
+
+        userRepository.delete(user);
+    }
+}
