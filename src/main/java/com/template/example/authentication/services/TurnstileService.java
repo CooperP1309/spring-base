@@ -24,7 +24,7 @@ public class TurnstileService
 
         if (this.turnstileActive)
         {
-            if (siteKey.isBlank() || secretKey.isBlank())
+            if (siteKey.isBlank() || secretKey.isBlank())   // Don't bother to check if == null, isBlank() will just throw for us anyway
             {
                 throw new IllegalStateException("Missing site-key or secret-key");
             }
@@ -32,5 +32,21 @@ public class TurnstileService
             this.siteKey = siteKey;
             this.secretKey = secretKey;
         }
+    }
+
+    public boolean verify(String token, String remoteIp)
+    {
+        if (!this.turnstileActive)
+        {
+            return true;
+        }
+
+        if (token == null || token.isBlank())
+        {
+            return false;
+        }
+
+
+        return true; // TODO: REMOVE LATER
     }
 }
