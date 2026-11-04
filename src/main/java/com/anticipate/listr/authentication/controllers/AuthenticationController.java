@@ -309,7 +309,17 @@ public class AuthenticationController
         }
 
         // async function (exceptions handled internally)
-        smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(), registeredUser.getEmail());
+        //smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(), registeredUser.getEmail());
+        log.info("REMOVE LATER - Verification link: {}", registeredUser.getEmailVerificationSecret());
+        try
+        {
+            smtpService.sendVerificationEmail(registeredUser.getEmail(), registeredUser.getEmailVerificationSecret());
+        }
+        catch(Exception e)
+        {
+            log.error("Unable to send verification email: {}", e.getMessage());
+        }
+
 
         log.info("User registered successfully: {}", newUser.getEmail());
         model.addAttribute("registrationSuccess", true);

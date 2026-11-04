@@ -34,6 +34,42 @@ public class SMTPService
     }
 
     @Async
+    /*  Sending of Account Verification Email
+     *
+     *  Using thymleaf TemplateEngine, this unit
+     *  handles the packing and sending of a verification email
+     *  with HTML.
+     */
+    public void sendVerificationEmail(String to, String verificationCode) throws Exception
+    {
+        // Build the verificaiton link
+        String base = verificationBaseUrl.endsWith("/")
+                ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
+                : verificationBaseUrl;
+        String verificationLink = base + "/auth/verify/" + verificationCode;
+        
+        log.info("REMOVE LATER - Verification link: {}", verificationLink);
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("verificaitonLink", verificationLink);
+        
+        // Build the template with Thymeleaf's Template Engine
+        Context context = new Context();
+        context.setVariables(variables);
+        String htmlContent = templateEngine.process("email/verify-email", context);
+
+        // Init and send off message
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        
+        helper.setTo(to);
+        helper.setSubject("Verify Your Email");
+        helper.setText(htmlContent, true);
+
+        mailSender.send(message);
+    }
+
+    @Async
     /*  Sending of Password Reset Email
      *
      *  Using thymleaf TemplateEngine, this unit
@@ -67,8 +103,6 @@ public class SMTPService
 
         mailSender.send(message);
     }
-
-
 
 
 
