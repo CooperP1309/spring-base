@@ -9,14 +9,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.ui.Model;
 import lombok.extern.slf4j.Slf4j;
 
+// REMOVE THESE LATER!!!!
+import com.anticipate.listr.authentication.services.SMTPService;
+import org.springframework.web.bind.annotation.PathVariable;
+import java.util.Map;
+import java.util.HashMap;
+
 @RequestMapping("/")
 @Controller
 @Slf4j
 public class HomeController 
 {
+    private SMTPService mailer;
 
-    public HomeController() 
+    public HomeController(SMTPService mailer) 
     {
+        this.mailer = mailer;
     }
     
     @GetMapping("/")
@@ -76,5 +84,5 @@ public class HomeController
         }
 
         return "home-page";
-    }    
+    }
 }
