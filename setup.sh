@@ -248,7 +248,7 @@ echo "The verification path is appended automatically; enter only the protocol"
 echo "and host (no trailing path). For example:"
 echo
 echo "    http://123.45.67.89"
-echo "    https://listr.example.com"
+echo "    https://app.example.com"
 echo
 echo "If you are testing locally, you can use:"
 echo
