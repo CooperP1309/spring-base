@@ -5,12 +5,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Async;
-import org.thymeleaf.TemplateEngine;
-import org.springframework.mail.javamail.MimeMessageHelper;   
-import jakarta.mail.internet.MimeMessage;
-import org.thymeleaf.context.Context;
-import java.util.Map;
-import java.util.HashMap;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -25,80 +19,80 @@ public class SMTPService
 
     private JavaMailSender mailSender;
 
-    private TemplateEngine templateEngine;
-
-    public SMTPService(JavaMailSender mailSender, TemplateEngine templateEngine) 
+    public SMTPService(JavaMailSender mailSender) 
     {
         this.mailSender = mailSender;
-        this.templateEngine = templateEngine;
     }
 
     @Async
-    /*  Sending of Account Verification Email
+    /*  Wrapper function for sendEmail()
      *
-     *  Using thymleaf TemplateEngine, this unit
-     *  handles the packing and sending of a verification email
-     *  with HTML.
+     *  This function wraps sendEmail() with the intention of
+     *  building a body and subject specific to sending verification
+     *  links. 
      */
-    public void sendVerificationEmail(String to, String verificationCode) throws Exception
+    public void sendVerificationLink(String verificationCode, String receivingEmail) 
     {
-        // Build the verificaiton link
+        
         String base = verificationBaseUrl.endsWith("/")
                 ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
                 : verificationBaseUrl;
         String verificationLink = base + "/auth/verify/" + verificationCode;
 
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("verificationLink", verificationLink);
-        
-        // Build the template with Thymeleaf's Template Engine
-        Context context = new Context();
-        context.setVariables(variables);
-        String htmlContent = templateEngine.process("email/verify-email", context);
+        String subject = "Verify your account";
+        String body =   "Thank you for signing up!\n\n" +
+                        "To complete your account setup, click the verification link below:\n\n" +
+                        verificationLink;
 
-        // Init and send off message
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-        
-        helper.setTo(to);
-        helper.setSubject("Verify Your Email");
-        helper.setText(htmlContent, true);
-
-        mailSender.send(message);
+        sendEmail(subject, body, receivingEmail);
     }
 
     @Async
-    /*  Sending of Password Reset Email
+    /*  Another wrapper function for sendEmail()
      *
-     *  Using thymleaf TemplateEngine, this unit
-     *  handles the packing and sending of a password reset email
-     *  with HTML.
+     *  This function wraps sendEmail() with the intention of
+     *  building a body and subject specific to sending password
+     *  reset links. The function is called asynchronously and thus
+     *  must catch and handle exceptions interally rather than allowing
+     *  them to propogate.
      */
-    public void sendPasswordResetEmail(String to, String verificationCode) throws Exception
+    public void sendPasswordResetLink(String verificationCode, String receivingEmail) 
     {
-        // Build the password reset link
         String base = verificationBaseUrl.endsWith("/")
-        ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
-        : verificationBaseUrl;
+                ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
+                : verificationBaseUrl;
                 
-        String passwordResetLink = base + "/auth/reset-password/" + verificationCode;
-        
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("passwordResetLink", passwordResetLink);
-        
-        // Build the template with Thymeleaf's Template Engine
-        Context context = new Context();
-        context.setVariables(variables);
-        String htmlContent = templateEngine.process("email/password-reset", context);
+        String verificationLink = base + "/auth/reset-password/" + verificationCode;
 
-        // Init and send off message
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-        
-        helper.setTo(to);
-        helper.setSubject("Password Reset");
-        helper.setText(htmlContent, true);
+        String subject = "Reset your password";
+        String body =   "IGNORE IF YOU DIDN'T REQUEST A PASSWORD RESET!\n\n" +
+                        "To reset your password, click the link below:\n\n" +
+                        verificationLink;
 
-        mailSender.send(message);
+        sendEmail(subject, body, receivingEmail);
+    }
+
+    /*  Core email sending unit.
+     *
+     *  This is core interface for sending emails. It relies
+     *  on SimpleMailMessage and thus email formatting is very
+     *  limited.
+     */
+    public void sendEmail(String subject, String body, String receivingEmail) 
+    {    
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(this.senderEmail);
+        message.setTo(receivingEmail);
+        message.setSubject(subject);
+        message.setText(body);
+
+        try
+        {
+            mailSender.send(message);
+        }
+        catch (Exception e)
+        {
+            log.error("Sending email: {}", e.getMessage());
+        }
     }
 }
