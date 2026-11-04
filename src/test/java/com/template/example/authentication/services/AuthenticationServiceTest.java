@@ -146,4 +146,53 @@ class AuthenticationServiceTest
                 DataAccessException.class,
                 () -> authenticationService.verifyEmailSecret("good-secret"));
     }
+
+    @Test
+    void resolvePasswordResetSecret_returnsUser_whenResetIsRecentOnOldAccount()
+    {
+        // createdAt is long past but the reset was just requested - expiry must
+        // follow resetSecretGeneratedAt, not createdAt
+        User user = new User()
+                .setEmail("someone@example.com")
+                .setEmailVerificationSecret("reset-secret")
+                .setResetSecretGeneratedAt(Date.from(Instant.now()));
+        ReflectionTestUtils.setField(user, "createdAt", Date.from(Instant.now().minus(30, ChronoUnit.DAYS)));
+
+        when(userRepository.findByEmailVerificationSecret("reset-secret"))
+                .thenReturn(Optional.of(user));
+
+        assertEquals(Optional.of(user), authenticationService.resolvePasswordResetSecret("reset-secret"));
+    }
+
+    @Test
+    void resolvePasswordResetSecret_returnsEmpty_whenResetIsOlderThanOneDay()
+    {
+        User user = new User()
+                .setEmail("someone@example.com")
+                .setEmailVerificationSecret("reset-secret")
+                .setResetSecretGeneratedAt(Date.from(Instant.now().minus(2, ChronoUnit.DAYS)));
+
+        when(userRepository.findByEmailVerificationSecret("reset-secret"))
+                .thenReturn(Optional.of(user));
+
+        assertTrue(authenticationService.resolvePasswordResetSecret("reset-secret").isEmpty());
+    }
+
+    @Test
+    void resetPassword_encodesPasswordAndClearsSecret()
+    {
+        User user = new User()
+                .setEmail("someone@example.com")
+                .setPassword("old-hash")
+                .setEmailVerificationSecret("reset-secret");
+
+        when(passwordEncoder.encode("NewPassword123")).thenReturn("new-hash");
+
+        authenticationService.resetPassword(user, "NewPassword123");
+
+        assertEquals("new-hash", user.getPassword());
+        // the reset link must be single use - the saved user can no longer be found by this secret
+        assertNull(user.getEmailVerificationSecret());
+        verify(userRepository).save(user);
+    }
 }
