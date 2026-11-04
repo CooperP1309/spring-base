@@ -51,7 +51,7 @@ public class SMTPService
         log.info("REMOVE LATER - Verification link: {}", verificationLink);
 
         Map<String, Object> variables = new HashMap<>();
-        variables.put("verificaitonLink", verificationLink);
+        variables.put("verificationLink", verificationLink);
         
         // Build the template with Thymeleaf's Template Engine
         Context context = new Context();
