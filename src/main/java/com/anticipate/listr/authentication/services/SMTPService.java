@@ -47,8 +47,6 @@ public class SMTPService
                 ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
                 : verificationBaseUrl;
         String verificationLink = base + "/auth/verify/" + verificationCode;
-        
-        log.info("REMOVE LATER - Verification link: {}", verificationLink);
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("verificationLink", verificationLink);
@@ -101,114 +99,6 @@ public class SMTPService
         helper.setSubject("Password Reset");
         helper.setText(htmlContent, true);
 
-        mailSender.send(message);
-    }
-
-
-
-
-
-
-
-
-
-
-
-/* LEGACY IMPLEMENTATION */
-
-    @Async
-    /*  Wrapper function for sendEmail()
-     *
-     *  This function wraps sendEmail() with the intention of
-     *  building a body and subject specific to sending verification
-     *  links. 
-     */
-    public void sendVerificationLink(String verificationCode, String receivingEmail) 
-    {
-        
-        String base = verificationBaseUrl.endsWith("/")
-                ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
-                : verificationBaseUrl;
-        String verificationLink = base + "/auth/verify/" + verificationCode;
-
-        String subject = "Verify your account";
-        String body =   "Thank you for signing up!\n\n" +
-                        "To complete your account setup, click the verification link below:\n\n" +
-                        verificationLink;
-
-        sendEmail(subject, body, receivingEmail);
-    }
-
-
-    @Async
-    /*  Another wrapper function for sendEmail()
-     *
-     *  This function wraps sendEmail() with the intention of
-     *  building a body and subject specific to sending password
-     *  reset links. The function is called asynchronously and thus
-     *  must catch and handle exceptions interally rather than allowing
-     *  them to propogate.
-     */
-    public void sendPasswordResetLink(String verificationCode, String receivingEmail) 
-    {
-        String base = verificationBaseUrl.endsWith("/")
-                ? verificationBaseUrl.substring(0, verificationBaseUrl.length() - 1)
-                : verificationBaseUrl;
-                
-        String verificationLink = base + "/auth/reset-password/" + verificationCode;
-
-        String subject = "Reset your password";
-        String body =   "IGNORE IF YOU DIDN'T REQUEST A PASSWORD RESET!\n\n" +
-                        "To reset your password, click the link below:\n\n" +
-                        verificationLink;
-
-        sendEmail(subject, body, receivingEmail);
-    }
-
-    /*  Core email sending unit.
-     *
-     *  This is core interface for sending emails. It relies
-     *  on SimpleMailMessage and thus email formatting is very
-     *  limited.
-     */
-    public void sendEmail(String subject, String body, String receivingEmail) 
-    {    
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(this.senderEmail);
-        message.setTo(receivingEmail);
-        message.setSubject(subject);
-        message.setText(body);
-
-        try
-        {
-            mailSender.send(message);
-        }
-        catch (Exception e)
-        {
-            log.error("Sending email: {}", e.getMessage());
-        }
-    }
-
-
-    /* Test function for template based emails
-     *
-     */
-    public void sendTestTemplateEmail(String to, String subject, Map<String, Object> variables) throws Exception
-    {
-        // 1. Process Template
-        Context context = new Context();
-        context.setVariables(variables);
-        String htmlContent = templateEngine.process("email/email-template", context);
-
-        // 2. Build MimeMessage
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-        
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(htmlContent, true); // true indicates HTML content
-
-        // 3. Send
         mailSender.send(message);
     }
 }

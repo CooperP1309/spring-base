@@ -85,27 +85,4 @@ public class HomeController
 
         return "home-page";
     }
-
-    @GetMapping("test-template-emails/{email}")
-    public String testTemplateEmails(@PathVariable String email)
-    {
-        Map<String, Object> emptyMap = new HashMap<>();
-
-        log.info("Made it this far!!!");
-
-        emptyMap.put("name", "Psy");
-
-        log.info("The map is updated");
-
-        try 
-        {
-            mailer.sendTestTemplateEmail(email, "TEST TEMPLATE EMAIL", emptyMap);
-        }
-        catch (Exception e)
-        {
-            log.error("{}", e.getMessage());    
-        }
-
-        return "home-page";
-    }
 }
