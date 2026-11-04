@@ -98,6 +98,9 @@ public class AuthenticationService
 
         verifiedUser.setEmailVerified(true);
 
+        // drop any outstanding registration link - it's no longer needed once an admin verifies the account
+        verifiedUser.setEmailVerificationSecret(null);
+
         return userRepository.save(verifiedUser);
     }
 
@@ -111,6 +114,10 @@ public class AuthenticationService
         }
 
         verifiedUser.setEmailVerified(false);
+
+        // burn any outstanding verification/reset secret - otherwise a disabled user could
+        // replay it on /auth/verify to re-enable their account, or trip the expiry path and delete it
+        verifiedUser.setEmailVerificationSecret(null);
 
         return userRepository.save(verifiedUser);
     }
@@ -150,6 +157,9 @@ public class AuthenticationService
         }
 
         user.setEmailVerified(true);
+
+        // burn the secret so the verification link is single use (mirrors resetPassword())
+        user.setEmailVerificationSecret(null);
 
         // let this fall to the global exception handler (DataAccessException)
         userRepository.save(user);
