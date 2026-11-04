@@ -151,6 +151,9 @@ public class AuthenticationService
 
         user.setEmailVerified(true);
 
+        // burn the secret so the verification link is single use (mirrors resetPassword())
+        user.setEmailVerificationSecret(null);
+
         // let this fall to the global exception handler (DataAccessException)
         userRepository.save(user);
 

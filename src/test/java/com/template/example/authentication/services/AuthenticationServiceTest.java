@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -109,6 +110,24 @@ class AuthenticationServiceTest
         authenticationService.verifyEmailSecret("good-secret");
 
         assertTrue(user.getEmailVerified());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void verifyEmailSecret_clearsSecret_whenUserIsVerified()
+    {
+        User user = new User()
+                .setEmail("someone@example.com")
+                .setEmailVerificationSecret("good-secret");
+        ReflectionTestUtils.setField(user, "createdAt", Date.from(Instant.now()));
+
+        when(userRepository.findByEmailVerificationSecret("good-secret"))
+                .thenReturn(Optional.of(user));
+
+        authenticationService.verifyEmailSecret("good-secret");
+
+        // the link must be single use - the saved user can no longer be found by this secret
+        assertNull(user.getEmailVerificationSecret());
         verify(userRepository).save(user);
     }
 

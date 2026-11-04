@@ -259,7 +259,7 @@ public class AuthenticationController
             return "register-page";
         }
 
-        /*  Why are there two if gates for bindingResult?
+        /*  Why are there two if gates for bindingResult? ^
          *
          *  The first gate checks against the email validator (a seperate module).
          *  If it's a problem, the error is added to the binding result, but no rejection
@@ -327,8 +327,8 @@ public class AuthenticationController
     @ResponseBody
     /*  The verification link endpoint
      *  
-     *  When a secret is sent to this endpoint, the secret verified as
-     *  being linked to an existing user. From there, the users "verified"
+     *  When a secret is sent to this endpoint, the secret is verified as
+     *  being linked to an existing user. From there, the user's "verified"
      *  field is set to true. This ultimately allows the logging in of that
      *  user from there on out.
      */
