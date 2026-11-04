@@ -34,6 +34,20 @@ public class TurnstileService
         }
     }
 
+    /*  Returns required fields for HTML rendering
+     *
+     *  These fields are required by the model advice to allow
+     *  the browser to run the captcha.
+     */
+    public boolean isEnabled()
+    {
+        return this.turnstileActive;
+    }
+    public String getSiteKey()
+    {
+        return this.siteKey;
+    }
+
     public boolean verify(String token, String remoteIp)
     {
         if (!this.turnstileActive)
