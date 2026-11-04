@@ -148,6 +148,61 @@ class AuthenticationServiceTest
     }
 
     @Test
+    void setEmailAsNotVerified_disablesUserAndClearsSecret()
+    {
+        User user = new User()
+                .setEmail("someone@example.com")
+                .setRole(Role.USER)
+                .setEmailVerified(true)
+                .setEmailVerificationSecret("outstanding-secret");
+
+        when(userRepository.findByEmail("someone@example.com")).thenReturn(Optional.of(user));
+
+        authenticationService.setEmailAsNotVerified("someone@example.com");
+
+        assertFalse(user.getEmailVerified());
+        // a leftover secret must not survive the disable, or it could be replayed on /auth/verify
+        assertNull(user.getEmailVerificationSecret());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void setEmailAsNotVerified_leavesAdminUntouched()
+    {
+        User admin = new User()
+                .setEmail("admin@example.com")
+                .setRole(Role.ADMIN)
+                .setEmailVerified(true)
+                .setEmailVerificationSecret("admin-secret");
+
+        when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+
+        authenticationService.setEmailAsNotVerified("admin@example.com");
+
+        assertTrue(admin.getEmailVerified());
+        assertEquals("admin-secret", admin.getEmailVerificationSecret());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void setEmailAsVerified_enablesUserAndClearsSecret()
+    {
+        User user = new User()
+                .setEmail("someone@example.com")
+                .setRole(Role.USER)
+                .setEmailVerified(false)
+                .setEmailVerificationSecret("registration-secret");
+
+        when(userRepository.findByEmail("someone@example.com")).thenReturn(Optional.of(user));
+
+        authenticationService.setEmailAsVerified("someone@example.com");
+
+        assertTrue(user.getEmailVerified());
+        assertNull(user.getEmailVerificationSecret());
+        verify(userRepository).save(user);
+    }
+
+    @Test
     void resolvePasswordResetSecret_returnsUser_whenResetIsRecentOnOldAccount()
     {
         // createdAt is long past but the reset was just requested - expiry must
