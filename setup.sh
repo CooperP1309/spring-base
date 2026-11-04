@@ -289,6 +289,55 @@ while true; do
 done
 
 clear
+echo "--------- Captcha (Cloudflare Turnstile) ---------"
+echo
+echo
+echo "Cloudflare Turnstile can protect the register, login and forgot-password"
+echo "forms from bots. This is optional - if you skip it, the forms work exactly"
+echo "as before and no requests are ever made to Cloudflare."
+echo
+echo "To enable it you need a free Cloudflare account and a Turnstile widget"
+echo "(Cloudflare dashboard -> Turnstile -> Add widget). Add the hostname users"
+echo "reach this server on to the widget, then copy its Site Key and Secret Key."
+echo
+echo "For local testing, Cloudflare's always-pass test keys can be used:"
+echo
+echo "    Site key:   1x00000000000000000000AA"
+echo "    Secret key: 1x0000000000000000000000000000000AA"
+echo
+while true; do
+    read -rp "Enable Cloudflare Turnstile? (y/N): " captcha_choice
+    case "$captcha_choice" in
+        [Yy]* ) turnstile_enabled=true; break;;
+        [Nn]* | "" ) turnstile_enabled=false; break;;
+        * ) echo "Please answer 'y' or 'n'." >&2;;
+    esac
+done
+turnstile_site_key=""
+turnstile_secret_key=""
+if [[ $turnstile_enabled == true ]]; then
+    echo
+    while [[ -z "$turnstile_site_key" ]]; do
+        read -rp "Enter the Turnstile site key: " turnstile_site_key \
+            || { echo "Error: no input." >&2; exit 1; }
+    done
+    while true; do
+        read -rsp "Enter the Turnstile secret key: " turnstile_secret_key
+        echo
+        read -rsp "Confirm the Turnstile secret key: " turnstile_secret_key_confirm
+        echo
+        if [[ -z "$turnstile_secret_key" ]]; then
+            echo "Error: the secret key cannot be empty." >&2
+        elif [[ "$turnstile_secret_key" == "$turnstile_secret_key_confirm" ]]; then
+            break
+        else
+            echo "Error: Secret keys do not match, please try again." >&2
+        fi
+        echo
+    done
+fi
+
+clear
 echo "--------- Admin Portal Setup ---------"
 echo
 echo
@@ -318,6 +367,10 @@ printf '  %-26s %s\n' "SMTP username:" "$smtp_username"
 printf '  %-26s %s\n' "Sender email:" "$smtp_sender"
 printf '  %-26s %s\n' "Public base URL:" "$verification_base_url"
 printf '  %-26s %s\n' "Secure cookie (HTTPS-only):" "$jwt_cookie_secure"
+printf '  %-26s %s\n' "Turnstile captcha:" "$turnstile_enabled"
+if [[ $turnstile_enabled == true ]]; then
+    printf '  %-26s %s\n' "Turnstile site key:" "$turnstile_site_key"
+fi
 printf '  %-26s %s\n' "Admin portal email:" "$admin_email"
 echo
 echo "Note: All of the above (including passwords) is written in plain text to"
@@ -377,6 +430,15 @@ $smtp_tls_prop
 spring.mail.properties[mail.smtp.connectiontimeout]=5000
 spring.mail.properties[mail.smtp.timeout]=3000
 spring.mail.properties[mail.smtp.writetimeout]=5000
+
+# Cloudflare Turnstile captcha on the register, login and forgot-password
+# forms. When false, the widget is not rendered and tokens are not verified,
+# so the keys below are ignored. Can be overridden by the environment
+# variables CAPTCHA_TURNSTILE_ENABLED, CAPTCHA_TURNSTILE_SITE_KEY and
+# CAPTCHA_TURNSTILE_SECRET_KEY.
+captcha.turnstile.enabled=$turnstile_enabled
+captcha.turnstile.site-key=$turnstile_site_key
+captcha.turnstile.secret-key=$turnstile_secret_key
 
 # Admin portal credentials
 admin.email=$admin_email

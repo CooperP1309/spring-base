@@ -275,6 +275,60 @@ while ($true) {
     break
 }
 
+# ---- Captcha (Cloudflare Turnstile) ----
+Clear-Host
+Write-Host "--------- Captcha (Cloudflare Turnstile) ---------"
+Write-Host
+Write-Host
+Write-Host "Cloudflare Turnstile can protect the register, login and forgot-password"
+Write-Host "forms from bots. This is optional - if you skip it, the forms work exactly"
+Write-Host "as before and no requests are ever made to Cloudflare."
+Write-Host
+Write-Host "To enable it you need a free Cloudflare account and a Turnstile widget"
+Write-Host "(Cloudflare dashboard -> Turnstile -> Add widget). Add the hostname users"
+Write-Host "reach this server on to the widget, then copy its Site Key and Secret Key."
+Write-Host
+Write-Host "For local testing, Cloudflare's always-pass test keys can be used:"
+Write-Host
+Write-Host "    Site key:   1x00000000000000000000AA"
+Write-Host "    Secret key: 1x0000000000000000000000000000000AA"
+Write-Host
+
+$turnstile_enabled = 'false'
+while ($true) {
+    $captchaChoice = Read-Host "Enable Cloudflare Turnstile? (y/N)"
+    switch -Wildcard ($captchaChoice.ToLower()) {
+        'y*' { $turnstile_enabled = 'true';  break }
+        'n*' { $turnstile_enabled = 'false'; break }
+        ''   { $turnstile_enabled = 'false'; break }
+        default { Write-Host "Please answer 'y' or 'n'." -ForegroundColor Red; continue }
+    }
+    break
+}
+
+$turnstile_site_key   = ''
+$turnstile_secret_key = ''
+if ($turnstile_enabled -eq 'true') {
+    Write-Host
+    while ([string]::IsNullOrEmpty($turnstile_site_key)) {
+        $turnstile_site_key = Read-Host "Enter the Turnstile site key"
+    }
+    while ($true) {
+        $turnstile_secret_key         = Read-SecureInput "Enter the Turnstile secret key"
+        Write-Host
+        $turnstile_secret_key_confirm = Read-SecureInput "Confirm the Turnstile secret key"
+        Write-Host
+        if ([string]::IsNullOrEmpty($turnstile_secret_key)) {
+            Write-Host "Error: the secret key cannot be empty." -ForegroundColor Red
+        } elseif ($turnstile_secret_key -eq $turnstile_secret_key_confirm) {
+            break
+        } else {
+            Write-Host "Error: Secret keys do not match, please try again." -ForegroundColor Red
+        }
+        Write-Host
+    }
+}
+
 # ---- Admin portal ----
 Clear-Host
 Write-Host "--------- Admin Portal Setup ---------"
@@ -305,6 +359,10 @@ Write-Host ("  {0,-26} {1}" -f "SMTP username:",           $smtp_username)
 Write-Host ("  {0,-26} {1}" -f "Sender email:",            $smtp_sender)
 Write-Host ("  {0,-26} {1}" -f "Public base URL:",         $verification_base_url)
 Write-Host ("  {0,-26} {1}" -f "Secure cookie (HTTPS-only):", $jwt_cookie_secure)
+Write-Host ("  {0,-26} {1}" -f "Turnstile captcha:",       $turnstile_enabled)
+if ($turnstile_enabled -eq 'true') {
+    Write-Host ("  {0,-26} {1}" -f "Turnstile site key:",  $turnstile_site_key)
+}
 Write-Host ("  {0,-26} {1}" -f "Admin portal email:",      $admin_email)
 Write-Host
 Write-Host "Note: All of the above (including passwords) is written in plain text to"
@@ -372,6 +430,15 @@ $tlsLine
 spring.mail.properties[mail.smtp.connectiontimeout]=5000
 spring.mail.properties[mail.smtp.timeout]=3000
 spring.mail.properties[mail.smtp.writetimeout]=5000
+
+# Cloudflare Turnstile captcha on the register, login and forgot-password
+# forms. When false, the widget is not rendered and tokens are not verified,
+# so the keys below are ignored. Can be overridden by the environment
+# variables CAPTCHA_TURNSTILE_ENABLED, CAPTCHA_TURNSTILE_SITE_KEY and
+# CAPTCHA_TURNSTILE_SECRET_KEY.
+captcha.turnstile.enabled=$turnstile_enabled
+captcha.turnstile.site-key=$turnstile_site_key
+captcha.turnstile.secret-key=$turnstile_secret_key
 
 # Admin portal credentials
 admin.email=$admin_email
