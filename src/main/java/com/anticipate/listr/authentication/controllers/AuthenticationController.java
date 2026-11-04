@@ -199,14 +199,8 @@ public class AuthenticationController
 
         String newSecret = authenticationService.setNewEmailSecret(user);
 
-        try
-        {
-            smtpService.sendPasswordResetEmail(user.getEmail(), newSecret);
-        }
-        catch(Exception e)
-        {
-            log.error("Unable to send password reset email: {}", e.getMessage());
-        }
+        // async function (exceptions handled internally)
+        smtpService.sendPasswordResetLink(newSecret, user.getEmail());
 
         bindingResult.reject("password.reset.sent", "Password Reset link sent.");
 
@@ -308,14 +302,8 @@ public class AuthenticationController
             return "register-page";
         }
 
-        try
-        {
-            smtpService.sendVerificationEmail(registeredUser.getEmail(), registeredUser.getEmailVerificationSecret());
-        }
-        catch(Exception e)
-        {
-            log.error("Unable to send verification email: {}", e.getMessage());
-        }
+        // async function (exceptions handled internally)
+        smtpService.sendVerificationLink(registeredUser.getEmailVerificationSecret(), registeredUser.getEmail());
 
         log.info("User registered successfully: {}", newUser.getEmail());
         model.addAttribute("registrationSuccess", true);
