@@ -12,6 +12,7 @@ import com.template.example.authentication.repositories.UserRepository;
 import com.template.example.authentication.services.SMTPService;
 import com.template.example.authentication.exceptions.ExpiredVerificationException;
 import com.template.example.authentication.exceptions.InvalidVerificationException;
+import com.template.example.authentication.services.TurnstileService;
 
 /* ===== spring libs ===== */
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Controller;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.RequestParam;   
 
 /* ===== java libs =====*/
 import jakarta.servlet.http.HttpServletResponse;
@@ -56,11 +58,14 @@ public class AuthenticationController
 
     private final JwtCookie jwtCookie;
 
+    private final TurnstileService turnstileService;
+
     public AuthenticationController(JwtService jwtService,
                                     AuthenticationService authenticationService,
                                     UserRepository userRepository,
                                     SMTPService smtpService,
-                                    JwtCookie jwtCookie)
+                                    JwtCookie jwtCookie,
+                                    TurnstileService turnstileService)
     {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
@@ -68,6 +73,7 @@ public class AuthenticationController
         this.userRepository = userRepository;
         this.smtpService = smtpService;
         this.jwtCookie = jwtCookie;
+        this.turnstileService = turnstileService;
     }
 
     @PostMapping("/login")
@@ -82,8 +88,15 @@ public class AuthenticationController
     public String authenticate(@ModelAttribute("user") LoginUserDto loginUserDto,
                                 BindingResult bindingResult,
                                 Model model,
-                                HttpServletResponse response)
+                                HttpServletResponse response,
+                                @RequestParam(required = false, name = "cf-turnstile-response") String turnstileResponseToken)
     {
+        if (!turnstileService.verify(turnstileResponseToken))
+        {
+            bindingResult.reject("captcha.failed", "Verification couldn't load. Please disable content blockers or try a different browser.");
+            return "login-page";
+        }
+
         if (bindingResult.hasErrors())
         {
             log.warn("Login request rejected due to errors: {}", bindingResult.getAllErrors());
@@ -175,8 +188,15 @@ public class AuthenticationController
      *  enumeration).
      */
     public String forgotPassword(@ModelAttribute("user") ForgotPasswordDto forgotPasswordDto,
-                                  BindingResult bindingResult)
+                                    BindingResult bindingResult,
+                                    @RequestParam(required = false, name = "cf-turnstile-response") String turnstileResponseToken)
     {
+        if (!turnstileService.verify(turnstileResponseToken))
+        {
+            bindingResult.reject("password.reset.sent", "Verification couldn't load. Please disable content blockers or try a different browser.");
+            return "forgot-password-page";
+        }
+        
         Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
 
         if (existingUser.isEmpty())
@@ -227,8 +247,15 @@ public class AuthenticationController
     */
     public String register(@Valid @ModelAttribute("user") RegisterUserDto newUser,
                            BindingResult bindingResult,
-                           Model model)
+                           Model model,
+                           @RequestParam(required = false, name = "cf-turnstile-response") String turnstileResponseToken)
     {
+        if (!turnstileService.verify(turnstileResponseToken))
+        {
+            bindingResult.reject("captcha.failed", "Verification couldn't load. Please disable content blockers or try a different browser.");
+            return "register-page";
+        }
+
         // validate email format and existence
         if (!bindingResult.hasFieldErrors("email") && 
             !this.emailValidator.isValid(newUser.getEmail()))

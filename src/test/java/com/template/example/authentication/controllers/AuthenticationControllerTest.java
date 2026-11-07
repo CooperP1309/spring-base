@@ -1,6 +1,8 @@
 package com.template.example.authentication.controllers;
 
 import com.template.example.authentication.dtos.ForgotPasswordDto;
+import com.template.example.authentication.dtos.LoginUserDto;
+import com.template.example.authentication.dtos.RegisterUserDto;
 import com.template.example.authentication.dtos.ResetPasswordDto;
 import com.template.example.authentication.configs.JwtCookie;
 import com.template.example.authentication.entities.User;
@@ -8,6 +10,7 @@ import com.template.example.authentication.repositories.UserRepository;
 import com.template.example.authentication.services.AuthenticationService;
 import com.template.example.authentication.services.JwtService;
 import com.template.example.authentication.services.SMTPService;
+import com.template.example.authentication.services.TurnstileService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +48,9 @@ class AuthenticationControllerTest
     @Mock
     private JwtCookie jwtCookie;
 
+    @Mock
+    private TurnstileService turnstileService;
+
     private AuthenticationController authenticationController;
 
     @BeforeEach
@@ -55,7 +61,8 @@ class AuthenticationControllerTest
                 authenticationService,
                 userRepository,
                 smtpService,
-                jwtCookie);
+                jwtCookie,
+                turnstileService);
     }
 
     @Test
@@ -66,7 +73,9 @@ class AuthenticationControllerTest
 
         when(userRepository.findByEmail("not-an-email")).thenReturn(Optional.empty());
 
-        String view = authenticationController.forgotPassword(input, bindingResult);
+        when(turnstileService.verify("test")).thenReturn(true);
+
+        String view = authenticationController.forgotPassword(input, bindingResult, "test");
 
         assertEquals("forgot-password-page", view);
         assertEquals("Password Reset link sent.", bindingResult.getGlobalError().getDefaultMessage());
@@ -81,7 +90,9 @@ class AuthenticationControllerTest
 
         when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
 
-        String view = authenticationController.forgotPassword(input, bindingResult);
+        when(turnstileService.verify("test")).thenReturn(true);
+
+        String view = authenticationController.forgotPassword(input, bindingResult, "test");
 
         assertEquals("forgot-password-page", view);
         assertEquals("Password Reset link sent.", bindingResult.getGlobalError().getDefaultMessage());
@@ -100,7 +111,9 @@ class AuthenticationControllerTest
 
         when(userRepository.findByEmail("unverified@example.com")).thenReturn(Optional.of(unverifiedUser));
 
-        String view = authenticationController.forgotPassword(input, bindingResult);
+        when(turnstileService.verify("test")).thenReturn(true);
+
+        String view = authenticationController.forgotPassword(input, bindingResult, "test");
 
         assertEquals("forgot-password-page", view);
         assertEquals("Password Reset link sent.", bindingResult.getGlobalError().getDefaultMessage());
@@ -161,5 +174,40 @@ class AuthenticationControllerTest
         assertEquals(false, model.getAttribute("secretInvalid"));
         assertEquals(true, model.getAttribute("resetSuccess"));
         verify(authenticationService).resetPassword(user, "NewPassword123");
+    }
+
+    @Test
+    void login_rejected_whenCaptchaFails()
+    {
+        LoginUserDto input = new LoginUserDto().setEmail("user@example.com").setPassword("Password12345");
+        BindingResult bindingResult = new BeanPropertyBindingResult(input, "user");
+
+        when(turnstileService.verify("bad-token")).thenReturn(false);
+
+        String view = authenticationController.authenticate(input, bindingResult, new ExtendedModelMap(), null, "bad-token");
+
+        assertEquals("login-page", view);
+        assertEquals("captcha.failed", bindingResult.getGlobalError().getCode());
+        verify(authenticationService, never()).authenticate(any());
+    }
+
+    @Test
+    void register_rejected_whenCaptchaFails()
+    {
+        RegisterUserDto input = new RegisterUserDto()
+                .setFullName("Jane Doe")
+                .setEmail("new@example.com")
+                .setPassword("Password12345");
+        BindingResult bindingResult = new BeanPropertyBindingResult(input, "user");
+        Model model = new ExtendedModelMap();
+
+        when(turnstileService.verify(null)).thenReturn(false);
+
+        String view = authenticationController.register(input, bindingResult, model, null);
+
+        assertEquals("register-page", view);
+        assertEquals("captcha.failed", bindingResult.getGlobalError().getCode());
+        assertEquals(null, model.getAttribute("registrationSuccess"));
+        verify(authenticationService, never()).signup(any());
     }
 }

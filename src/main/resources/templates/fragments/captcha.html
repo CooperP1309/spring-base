@@ -1,0 +1,4 @@
+<th:block th:fragment="turnstile" th:if="${turnstileEnabled}">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <div class="cf-turnstile" th:attr="data-sitekey=${turnstileSiteKey}"></div>
+</th:block>
