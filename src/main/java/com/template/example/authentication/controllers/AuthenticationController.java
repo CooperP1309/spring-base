@@ -31,6 +31,7 @@ import org.springframework.stereotype.Controller;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.RequestParam;   
 
 /* ===== java libs =====*/
 import jakarta.servlet.http.HttpServletResponse;
@@ -175,9 +176,12 @@ public class AuthenticationController
      *  enumeration).
      */
     public String forgotPassword(@ModelAttribute("user") ForgotPasswordDto forgotPasswordDto,
-                                  BindingResult bindingResult)
+                                    @RequestParam(required = false, name = "cf-turnstile-response") String turnstileResponseToken,
+                                    BindingResult bindingResult)
     {
         Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
+
+        log.info("I HAVE THE FOLLOWING TURNSTILE RESPONSE TOKEN: {}", turnstileResponseToken);
 
         if (existingUser.isEmpty())
         {
