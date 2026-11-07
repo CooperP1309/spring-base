@@ -21,6 +21,8 @@
     <label for="password">Password</label>
     <input type="password" id="password" th:field="*{password}" required />
 
+    <div th:replace="~{fragments/captcha :: turnstile}"></div>
+
     <button type="submit">Login</button>
 </form>
 

@@ -88,8 +88,15 @@ public class AuthenticationController
     public String authenticate(@ModelAttribute("user") LoginUserDto loginUserDto,
                                 BindingResult bindingResult,
                                 Model model,
-                                HttpServletResponse response)
+                                HttpServletResponse response,
+                                @RequestParam(required = false, name = "cf-turnstile-response") String turnstileResponseToken)
     {
+        if (!turnstileService.verify(turnstileResponseToken))
+        {
+            bindingResult.reject("captcha.failed", "Verification couldn't load. Please disable content blockers or try a different browser.");
+            return "login-page";
+        }
+
         if (bindingResult.hasErrors())
         {
             log.warn("Login request rejected due to errors: {}", bindingResult.getAllErrors());
@@ -240,8 +247,15 @@ public class AuthenticationController
     */
     public String register(@Valid @ModelAttribute("user") RegisterUserDto newUser,
                            BindingResult bindingResult,
-                           Model model)
+                           Model model,
+                           @RequestParam(required = false, name = "cf-turnstile-response") String turnstileResponseToken)
     {
+        if (!turnstileService.verify(turnstileResponseToken))
+        {
+            bindingResult.reject("captcha.failed", "Verification couldn't load. Please disable content blockers or try a different browser.");
+            return "register-page";
+        }
+
         // validate email format and existence
         if (!bindingResult.hasFieldErrors("email") && 
             !this.emailValidator.isValid(newUser.getEmail()))
