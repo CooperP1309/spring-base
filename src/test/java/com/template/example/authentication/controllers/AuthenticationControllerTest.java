@@ -71,7 +71,7 @@ class AuthenticationControllerTest
 
         when(userRepository.findByEmail("not-an-email")).thenReturn(Optional.empty());
 
-        String view = authenticationController.forgotPassword(input, "test", bindingResult);
+        String view = authenticationController.forgotPassword(input, bindingResult, "test");
 
         assertEquals("forgot-password-page", view);
         assertEquals("Password Reset link sent.", bindingResult.getGlobalError().getDefaultMessage());
@@ -86,7 +86,7 @@ class AuthenticationControllerTest
 
         when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
 
-        String view = authenticationController.forgotPassword(input, "test", bindingResult);
+        String view = authenticationController.forgotPassword(input, bindingResult, "test");
 
         assertEquals("forgot-password-page", view);
         assertEquals("Password Reset link sent.", bindingResult.getGlobalError().getDefaultMessage());
@@ -105,7 +105,7 @@ class AuthenticationControllerTest
 
         when(userRepository.findByEmail("unverified@example.com")).thenReturn(Optional.of(unverifiedUser));
 
-        String view = authenticationController.forgotPassword(input, "test", bindingResult);
+        String view = authenticationController.forgotPassword(input, bindingResult, "test");
 
         assertEquals("forgot-password-page", view);
         assertEquals("Password Reset link sent.", bindingResult.getGlobalError().getDefaultMessage());

@@ -181,15 +181,16 @@ public class AuthenticationController
      *  enumeration).
      */
     public String forgotPassword(@ModelAttribute("user") ForgotPasswordDto forgotPasswordDto,
-                                    @RequestParam(required = false, name = "cf-turnstile-response") String turnstileResponseToken,
-                                    BindingResult bindingResult)
+                                    BindingResult bindingResult,
+                                    @RequestParam(required = false, name = "cf-turnstile-response") String turnstileResponseToken)
     {
-        Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
-
         if (!turnstileService.verify(turnstileResponseToken, "test"))
         {
             bindingResult.reject("password.reset.sent", "Verification couldn't load. Please disable content blockers or try a different browser.");
+            return "forgot-password-page";
         }
+        
+        Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
 
         if (existingUser.isEmpty())
         {
