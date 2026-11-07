@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import com.template.example.authentication.responses.TurnstileVerifyResponse;
+
 @Service
 @Slf4j
 public class TurnstileService 
@@ -84,16 +86,16 @@ public class TurnstileService
         formData.add("secret", secretKey);
         formData.add("response", token);
 
-        String response =
+        TurnstileVerifyResponse response =
         
             restClient.post()
                 .uri(VERIFY_URL)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(formData)
                 .retrieve()
-                .body(String.class);
+                .body(TurnstileVerifyResponse.class);
 
-        log.info("RESPONSE FROM CLOUD FLARE {}", response);
+        log.info("RESPONSE FROM CLOUD FLARE {}", response.isSuccess());
 
         return true; // TODO: REMOVE LATER
     }
