@@ -186,9 +186,10 @@ public class AuthenticationController
     {
         Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
 
-        log.info("I HAVE THE FOLLOWING TURNSTILE RESPONSE TOKEN: {}", turnstileResponseToken);
-
-        turnstileService.verify(turnstileResponseToken, "test");
+        if (!turnstileService.verify(turnstileResponseToken, "test"))
+        {
+            bindingResult.reject("password.reset.sent", "Verification couldn't load. Please disable content blockers or try a different browser.");
+        }
 
         if (existingUser.isEmpty())
         {

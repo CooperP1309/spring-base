@@ -79,24 +79,39 @@ public class TurnstileService
             return false;
         }
 
-        log.info("VERIFYING TOKEN {}", token);
-
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         
         formData.add("secret", secretKey);
         formData.add("response", token);
 
-        TurnstileVerifyResponse response =
-        
-            restClient.post()
-                .uri(VERIFY_URL)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(formData)
-                .retrieve()
-                .body(TurnstileVerifyResponse.class);
+        try
+        {
+            TurnstileVerifyResponse response =
+            
+                restClient.post()
+                    .uri(VERIFY_URL)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(formData)
+                    .retrieve()
+                    .body(TurnstileVerifyResponse.class);
 
-        log.info("RESPONSE FROM CLOUD FLARE {}", response.isSuccess());
+            if (response == null || !response.isSuccess())
+            {
+                if (response != null)
+                {
+                    log.debug("Response token rejected with {}", response.getErrorCodes());    
+                }
+                
+                return false;
+            }
 
-        return true; // TODO: REMOVE LATER
+            return true;
+        } 
+        catch (Exception e) 
+        {
+            log.warn("Failed to call Turnstile Verify", e);
+
+            return false;
+        }
     }
 }
