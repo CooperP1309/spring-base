@@ -184,7 +184,7 @@ public class AuthenticationController
                                     BindingResult bindingResult,
                                     @RequestParam(required = false, name = "cf-turnstile-response") String turnstileResponseToken)
     {
-        if (!turnstileService.verify(turnstileResponseToken, "test"))
+        if (!turnstileService.verify(turnstileResponseToken))
         {
             bindingResult.reject("password.reset.sent", "Verification couldn't load. Please disable content blockers or try a different browser.");
             return "forgot-password-page";

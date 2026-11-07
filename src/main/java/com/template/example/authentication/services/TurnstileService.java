@@ -67,7 +67,7 @@ public class TurnstileService
      *  secret in conjunction (not AND-ing) with the response token
      *  to verify if the request is allowed to continue.
      */
-    public boolean verify(String token, String remoteIp)
+    public boolean verify(String token)
     {
         if (!this.turnstileActive)
         {
