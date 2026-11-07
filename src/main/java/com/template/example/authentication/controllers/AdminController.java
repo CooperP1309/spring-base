@@ -79,9 +79,12 @@ public class AdminController
      */
     public String setAccountEnabled(@ModelAttribute SetAccountEnabledDto input)
     {
-        if (input.isEnabled()) {
+        if (input.isEnabled()) 
+        {
             authenticationService.setEmailAsVerified(input.getEmail());
-        } else {
+        } 
+        else 
+        {
             authenticationService.setEmailAsNotVerified(input.getEmail());
         }
 
