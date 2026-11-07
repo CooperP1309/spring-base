@@ -8,6 +8,7 @@ import com.template.example.authentication.repositories.UserRepository;
 import com.template.example.authentication.services.AuthenticationService;
 import com.template.example.authentication.services.JwtService;
 import com.template.example.authentication.services.SMTPService;
+import com.template.example.authentication.services.TurnstileService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,9 @@ class AuthenticationControllerTest
     @Mock
     private JwtCookie jwtCookie;
 
+    @Mock
+    private TurnstileService turnstileService;
+
     private AuthenticationController authenticationController;
 
     @BeforeEach
@@ -55,7 +59,8 @@ class AuthenticationControllerTest
                 authenticationService,
                 userRepository,
                 smtpService,
-                jwtCookie);
+                jwtCookie,
+                turnstileService);
     }
 
     @Test

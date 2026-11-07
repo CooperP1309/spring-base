@@ -1,8 +1,12 @@
 package com.template.example.authentication.services;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.client.RestClient;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 @Service
 @Slf4j
@@ -14,6 +18,10 @@ public class TurnstileService
 
     private String secretKey;
 
+    private final RestClient restClient;
+
+    private static final String VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+
     public TurnstileService(@Value("${captcha.turnstile.enabled}") boolean turnstileActive,
                             @Value("${captcha.turnstile.site-key}") String siteKey,
                             @Value("${captcha.turnstile.secret-key}") String secretKey) 
@@ -21,6 +29,8 @@ public class TurnstileService
         this.turnstileActive = turnstileActive;
         this.siteKey = null;
         this.secretKey = null;
+
+        this.restClient = RestClient.create();
 
         if (this.turnstileActive)
         {
@@ -48,6 +58,13 @@ public class TurnstileService
         return this.siteKey;
     }
 
+    /*  Verify against Cloudflare
+     *
+     *  Once a user has received a turnstile token from cloud flare, 
+     *  it's sent here from the controller. This function uses the .env
+     *  secret in conjunction (not AND-ing) with the response token
+     *  to verify if the request is allowed to continue.
+     */
     public boolean verify(String token, String remoteIp)
     {
         if (!this.turnstileActive)
@@ -60,6 +77,23 @@ public class TurnstileService
             return false;
         }
 
+        log.info("VERIFYING TOKEN {}", token);
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        
+        formData.add("secret", secretKey);
+        formData.add("response", token);
+
+        String response =
+        
+            restClient.post()
+                .uri(VERIFY_URL)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(formData)
+                .retrieve()
+                .body(String.class);
+
+        log.info("RESPONSE FROM CLOUD FLARE {}", response);
 
         return true; // TODO: REMOVE LATER
     }

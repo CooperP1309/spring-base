@@ -12,6 +12,7 @@ import com.template.example.authentication.repositories.UserRepository;
 import com.template.example.authentication.services.SMTPService;
 import com.template.example.authentication.exceptions.ExpiredVerificationException;
 import com.template.example.authentication.exceptions.InvalidVerificationException;
+import com.template.example.authentication.services.TurnstileService;
 
 /* ===== spring libs ===== */
 import org.springframework.http.ResponseEntity;
@@ -57,11 +58,14 @@ public class AuthenticationController
 
     private final JwtCookie jwtCookie;
 
+    private final TurnstileService turnstileService;
+
     public AuthenticationController(JwtService jwtService,
                                     AuthenticationService authenticationService,
                                     UserRepository userRepository,
                                     SMTPService smtpService,
-                                    JwtCookie jwtCookie)
+                                    JwtCookie jwtCookie,
+                                    TurnstileService turnstileService)
     {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
@@ -69,6 +73,7 @@ public class AuthenticationController
         this.userRepository = userRepository;
         this.smtpService = smtpService;
         this.jwtCookie = jwtCookie;
+        this.turnstileService = turnstileService;
     }
 
     @PostMapping("/login")
@@ -182,6 +187,8 @@ public class AuthenticationController
         Optional<User> existingUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
 
         log.info("I HAVE THE FOLLOWING TURNSTILE RESPONSE TOKEN: {}", turnstileResponseToken);
+
+        turnstileService.verify(turnstileResponseToken, "test");
 
         if (existingUser.isEmpty())
         {
