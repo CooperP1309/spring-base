@@ -1,20 +1,32 @@
 #Requires -Version 5.1
 
 Clear-Host
+Write-Host @'
+ _____            _              ______
+/  ___|          (_)             | ___ \
+\ `--. _ __  _ __ _ _ __   __ _  | |_/ / __ _ ___  ___
+ `--. \ '_ \| '__| | '_ \ / _` | | ___ \/ _` / __|/ _ \
+/\__/ / |_) | |  | | | | | (_| | | |_/ / (_| \__ \  __/
+\____/| .__/|_|  |_|_| |_|\__, | \____/ \__,_|___/\___|
+      | |                  __/ |
+      |_|                 |___/
+'@
+Write-Host
+Write-Host
 Write-Host "--------- Database Mode ---------"
 Write-Host
 Write-Host
-Write-Host "How should MySQL be provided?"
-Write-Host "  [d] Automate MySQL with Docker"
-Write-Host "  [s] I'll provide my own MySQL server (no Docker needed)"
+Write-Host "How should the MySQL database be setup?"
+Write-Host "  [1] Let Spring Boot's docker compose handle it  (quick setup)"
+Write-Host "  [2] I'll provide my own MySQL server (no Docker needed)"
 Write-Host
 $use_docker = $true
 while ($true) {
-    $modeChoice = Read-Host "(d/s)"
-    switch -Wildcard ($modeChoice.ToLower()) {
-        'd*' { $use_docker = $true;  break }
-        's*' { $use_docker = $false; break }
-        default { Write-Host "Please answer 'd' or 's'." -ForegroundColor Red; continue }
+    $modeChoice = Read-Host "(1/2)"
+    switch ($modeChoice.Trim()) {
+        '1' { $use_docker = $true;  break }
+        '2' { $use_docker = $false; break }
+        default { Write-Host "Please answer '1' or '2'." -ForegroundColor Red; continue }
     }
     break
 }

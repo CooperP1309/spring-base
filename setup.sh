@@ -1,19 +1,33 @@
 #!/usr/bin/env bash
 
 clear
-echo "--------- Database Mode ---------"
+cat <<'EOF'
+ _____            _              ______
+/  ___|          (_)             | ___ \
+\ `--. _ __  _ __ _ _ __   __ _  | |_/ / __ _ ___  ___
+ `--. \ '_ \| '__| | '_ \ / _` | | ___ \/ _` / __|/ _ \
+/\__/ / |_) | |  | | | | | (_| | | |_/ / (_| \__ \  __/
+\____/| .__/|_|  |_|_| |_|\__, | \____/ \__,_|___/\___|
+      | |                  __/ |
+      |_|                 |___/
+EOF
+echo
+echo "(Setup)"
+echo
+echo "--------- Database Configuration ---------"
 echo
 echo
-echo "How should MySQL be provided?"
-echo "  [d] Automate MySQL with Docker"
-echo "  [s] I'll provide my own MySQL server (no Docker needed)"
+echo "How should the MySQL database be setup?"
+echo
+echo "  [1] Let Spring Boot's docker compose handle it  (quick setup)"
+echo "  [2] I'll provide my own MySQL server (no Docker needed)"
 echo
 while true; do
-    read -rp "(d/s): " mode_choice || { echo "Error: no input." >&2; exit 1; }
+    read -rp "(1/2): " mode_choice || { echo "Error: no input." >&2; exit 1; }
     case "$mode_choice" in
-        [Dd]* ) use_docker=true; break;;
-        [Ss]* ) use_docker=false; break;;
-        * ) echo "Please answer 'd' or 's'." >&2;;
+        1 ) use_docker=true; break;;
+        2 ) use_docker=false; break;;
+        * ) echo "Please answer '1' or '2'." >&2;;
     esac
 done
 
