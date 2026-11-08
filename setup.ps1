@@ -726,3 +726,4 @@ if ($use_docker) {
 Write-Host "To start the server, run the following command:"
 Write-Host
 Write-Host ".\mvnw.cmd spring-boot:run"
+Write-Host

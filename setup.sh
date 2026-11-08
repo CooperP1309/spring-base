@@ -702,3 +702,4 @@ fi
 echo "To start the server, run the following command:"
 echo
 echo "./mvnw spring-boot:run"
+echo
