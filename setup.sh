@@ -90,13 +90,13 @@ tcp_reachable() {
 prompt_mysql_server() {
     while true; do
         while true; do
-            read -rp "MySQL host [localhost]: " db_host || { echo "Error: no input." >&2; exit 1; }
+            read -rp "MySQL host [Default: localhost]: " db_host || { echo "Error: no input." >&2; exit 1; }
             db_host=${db_host:-localhost}
             [[ $db_host =~ ^[A-Za-z0-9.-]+$ ]] && break
             echo "Error: '$db_host' is not a valid hostname or IPv4 address." >&2
         done
         while true; do
-            read -rp "MySQL port [3306]: " db_port || { echo "Error: no input." >&2; exit 1; }
+            read -rp "MySQL port [Default: 3306]: " db_port || { echo "Error: no input." >&2; exit 1; }
             db_port=${db_port:-3306}
             if [[ $db_port =~ ^[0-9]+$ ]] && (( db_port >= 1 && db_port <= 65535 )); then
                 break
@@ -272,7 +272,7 @@ if [[ $use_docker == false ]]; then
     echo "Enter the connection details of your MySQL server."
     echo
     prompt_mysql_server
-    read -rp "MySQL username [root]: " db_username || { echo "Error: no input." >&2; exit 1; }
+    read -rp "MySQL username [Default: root]: " db_username || { echo "Error: no input." >&2; exit 1; }
     db_username=${db_username:-root}
 fi
 

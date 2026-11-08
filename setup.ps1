@@ -91,13 +91,13 @@ function Test-TcpReachable {
 function Prompt-MySqlServer {
     while ($true) {
         while ($true) {
-            $dbHost = Read-Host "MySQL host [localhost]"
+            $dbHost = Read-Host "MySQL host [Default: localhost]"
             if ([string]::IsNullOrEmpty($dbHost)) { $dbHost = 'localhost' }
             if ($dbHost -match '^[A-Za-z0-9.-]+$') { break }
             Write-Host "Error: '$dbHost' is not a valid hostname or IPv4 address." -ForegroundColor Red
         }
         while ($true) {
-            $raw = Read-Host "MySQL port [3306]"
+            $raw = Read-Host "MySQL port [Default: 3306]"
             if ([string]::IsNullOrEmpty($raw)) { $raw = '3306' }
             if ($raw -match '^\d+$' -and [int]$raw -ge 1 -and [int]$raw -le 65535) {
                 $dbPort = [int]$raw; break
@@ -260,7 +260,7 @@ if (-not $use_docker) {
     $mysqlServer = Prompt-MySqlServer
     $db_host     = $mysqlServer.Host
     $db_port     = $mysqlServer.Port
-    $db_username = Read-Host "MySQL username [root]"
+    $db_username = Read-Host "MySQL username [Default: root]"
     if ([string]::IsNullOrEmpty($db_username)) { $db_username = 'root' }
 }
 
