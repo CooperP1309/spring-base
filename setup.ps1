@@ -250,10 +250,54 @@ if (-not $use_docker) {
     if ([string]::IsNullOrEmpty($db_username)) { $db_username = 'root' }
 }
 
+# ---- Existing Docker MySQL (Docker mode) ----
+$db_password_prompt = "Enter your database password"
+$reset_volume = $false
+if ($use_docker) {
+    # A running MySQL from an earlier setup would hold its host port (and its volume).
+    $runningIds = @(docker ps -q --filter "label=com.docker.compose.project=springboot" 2>$null)
+    if ($runningIds.Count -gt 0) {
+        Write-Host "The MySQL container from an earlier setup is still running." -ForegroundColor Yellow
+        Write-Host "Stop the Spring app first if it is running, then stop the container."
+        $stopChoice = Read-Host "Stop the container now? (y/n)"
+        if ($stopChoice -match '^[Yy]') {
+            docker stop $runningIds | Out-Null
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+        } else {
+            Write-Host "Exiting..."
+            exit 1
+        }
+        Write-Host
+    }
+
+    # MYSQL_ROOT_PASSWORD only takes effect when the volume is empty.
+    docker volume inspect springboot_mysql-data 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Existing MySQL data found (Docker volume springboot_mysql-data)." -ForegroundColor Yellow
+        Write-Host "MySQL only applies a new password to an empty volume. Would you like to:"
+        while ($true) {
+            Write-Host "[k] Keep the data (enter the CURRENT database password next)"
+            Write-Host "[r] Reset: permanently delete ALL data, including all users, and set a new password"
+            Write-Host
+            $volumeChoice = Read-Host "(k/r)"
+            if ($volumeChoice -match '^[Kk]') {
+                $db_password_prompt = "Enter your CURRENT database password"
+                break
+            } elseif ($volumeChoice -match '^[Rr]') {
+                $resetConfirm = Read-Host "This permanently deletes all users. Are you sure? (y/n)"
+                if ($resetConfirm -match '^[Yy]') { $reset_volume = $true; break }
+                Write-Host
+            } else {
+                Write-Host "Please answer 'k' or 'r'." -ForegroundColor Red
+            }
+        }
+    }
+}
+
 # ---- Database password ----
 Write-Host
 while ($true) {
-    $db_password         = Read-SecureInput "Enter your database password"
+    $db_password         = Read-SecureInput $db_password_prompt
     Write-Host
     # The mysql image's first-boot script puts MYSQL_ROOT_PASSWORD into SQL
     # unescaped: ' breaks initialization and \ would act as an SQL escape.
@@ -455,6 +499,14 @@ if ($use_docker) {
 Write-Host ("  {0,-26} {1}" -f "Spring server port:",      $server_port)
 if ($use_docker) {
     Write-Host ("  {0,-26} {1}" -f "MySQL host port:",     $db_port)
+    if ($reset_volume) {
+        Write-Host ("  {0,-26} {1}" -f "Existing MySQL data:", "DELETE (reset)")
+    } else {
+        docker volume inspect springboot_mysql-data 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host ("  {0,-26} {1}" -f "Existing MySQL data:", "keep")
+        }
+    }
 } else {
     Write-Host ("  {0,-26} {1}" -f "MySQL server:",        "${db_host}:${db_port}")
     Write-Host ("  {0,-26} {1}" -f "MySQL username:",      $db_username)
@@ -493,6 +545,29 @@ New-Item -ItemType Directory -Force -Path $propsDir | Out-Null
 $propsFile = Join-Path $propsDir "application.properties"
 
 $tlsLine = if ($smtp_tls_prop) { $smtp_tls_prop } else { '' }
+
+if ($reset_volume) {
+    # Runs before compose.yaml is regenerated, so 'down -v' uses the old file.
+    Write-Host "Deleting existing MySQL data..."
+    $oldCompose = Join-Path $PSScriptRoot "compose.yaml"
+    if (Test-Path $oldCompose) {
+        docker compose --file $oldCompose down -v
+    }
+    # Fallback (no compose file, or one with a different project): containers
+    # still reference the volume, so remove them first.
+    docker volume inspect springboot_mysql-data 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        $oldIds = @(docker ps -aq --filter "label=com.docker.compose.project=springboot" 2>$null)
+        if ($oldIds.Count -gt 0) { docker rm -f $oldIds | Out-Null }
+        docker volume rm springboot_mysql-data | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Could not delete volume springboot_mysql-data."
+            exit 1
+        }
+    }
+    Write-Host "MySQL data deleted."
+    Write-Host
+}
 
 if ($use_docker) {
     # Escape the password for compose.yaml: '$' -> '$$' (Compose interpolation),

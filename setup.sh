@@ -261,9 +261,54 @@ if [[ $use_docker == false ]]; then
     read -rp "MySQL username [root]: " db_username || { echo "Error: no input." >&2; exit 1; }
     db_username=${db_username:-root}
 fi
+
+db_password_prompt="Enter your database password"
+reset_volume=false
+if [[ $use_docker == true ]]; then
+    # A running MySQL from an earlier setup would hold its host port (and its volume).
+    running_ids=$(docker ps -q --filter "label=com.docker.compose.project=springboot")
+    if [[ -n $running_ids ]]; then
+        echo "The MySQL container from an earlier setup is still running."
+        echo "Stop the Spring app first if it is running, then stop the container."
+        read -rp "Stop the container now? (y/n): " stop_choice || { echo "Error: no input." >&2; exit 1; }
+        case "$stop_choice" in
+            [Yy]* ) docker stop $running_ids >/dev/null || exit 1 ;;
+            * ) echo "Exiting..."; exit 1 ;;
+        esac
+        echo
+    fi
+
+    # MYSQL_ROOT_PASSWORD only takes effect when the volume is empty.
+    if docker volume inspect springboot_mysql-data >/dev/null 2>&1; then
+        echo "Existing MySQL data found (Docker volume springboot_mysql-data)."
+        echo "MySQL only applies a new password to an empty volume. Would you like to:"
+        while true; do
+            echo "[k] Keep the data (enter the CURRENT database password next)"
+            echo "[r] Reset: permanently delete ALL data, including all users, and set a new password"
+            echo
+            read -rp "(k/r): " volume_choice || { echo "Error: no input." >&2; exit 1; }
+            case "$volume_choice" in
+                [Kk]* )
+                    db_password_prompt="Enter your CURRENT database password"
+                    break
+                    ;;
+                [Rr]* )
+                    read -rp "This permanently deletes all users. Are you sure? (y/n): " reset_confirm \
+                        || { echo "Error: no input." >&2; exit 1; }
+                    if [[ $reset_confirm == [Yy]* ]]; then
+                        reset_volume=true
+                        break
+                    fi
+                    echo
+                    ;;
+                * ) echo "Please answer 'k' or 'r'." >&2 ;;
+            esac
+        done
+    fi
+fi
 echo
 while true; do
-    read -rsp "Enter your database password: " db_password
+    read -rsp "$db_password_prompt: " db_password
     echo
     # The mysql image's first-boot script puts MYSQL_ROOT_PASSWORD into SQL
     # unescaped: ' breaks initialization and \ would act as an SQL escape.
@@ -454,6 +499,11 @@ fi
 printf '  %-26s %s\n' "Spring server port:" "$server_port"
 if [[ $use_docker == true ]]; then
     printf '  %-26s %s\n' "MySQL host port:" "$db_port"
+    if [[ $reset_volume == true ]]; then
+        printf '  %-26s %s\n' "Existing MySQL data:" "DELETE (reset)"
+    elif docker volume inspect springboot_mysql-data >/dev/null 2>&1; then
+        printf '  %-26s %s\n' "Existing MySQL data:" "keep"
+    fi
 else
     printf '  %-26s %s\n' "MySQL server:" "$db_host:$db_port"
     printf '  %-26s %s\n' "MySQL username:" "$db_username"
@@ -482,9 +532,27 @@ read -rp "Are you sure you want to continue? (y/n): " confirm
 case "$confirm" in
     [Yy]* ) echo "Proceeding...";;
     [Nn]* ) echo "Exiting..."; exit 1;;
-    * ) echo "Invalid response";;
+    * ) echo "Invalid response"; exit 1;;
 esac
 echo
+
+if [[ $reset_volume == true ]]; then
+    # Runs before compose.yaml is regenerated, so 'down -v' uses the old file.
+    echo "Deleting existing MySQL data..."
+    if [[ -f ./compose.yaml ]]; then
+        docker compose down -v
+    fi
+    # Fallback (no compose file, or one with a different project): containers
+    # still reference the volume, so remove them first.
+    if docker volume inspect springboot_mysql-data >/dev/null 2>&1; then
+        old_ids=$(docker ps -aq --filter "label=com.docker.compose.project=springboot")
+        [[ -n $old_ids ]] && docker rm -f $old_ids >/dev/null
+        docker volume rm springboot_mysql-data >/dev/null \
+            || { echo "Error: could not delete volume springboot_mysql-data." >&2; exit 1; }
+    fi
+    echo "MySQL data deleted."
+    echo
+fi
 
 if [[ $use_docker == true ]]; then
     # Escape the password for compose.yaml: '$' -> '$$' (Compose interpolation),
