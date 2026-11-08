@@ -236,7 +236,7 @@ function Read-SecureInput {
 
 # ---- JWT Secret ----
 Clear-Host
-Write-Host "--------- Welcome to the Server Setup ---------"
+Write-Host "--------- Spring Base Setup ---------"
 Write-Host
 Write-Host
 $jwt_secret = ''
@@ -245,7 +245,7 @@ while ($true) {
     Write-Host
     if ($jwt_secret.Length -eq 64) { break }
     Clear-Host
-    Write-Host "--------- Welcome to the Server Setup ---------"
+    Write-Host "--------- Spring Base Setup ---------"
     Write-Host
     Write-Host
     Write-Host "Error: Secret must be exactly 64 characters (you entered $($jwt_secret.Length))" -ForegroundColor Red
@@ -325,7 +325,7 @@ while ($true) {
     Write-Host
     if ($db_password -eq $db_password_confirm) { break }
     Clear-Host
-    Write-Host "--------- Welcome to the Server Setup ---------"
+    Write-Host "--------- Spring Base Setup ---------"
     Write-Host
     Write-Host
     Write-Host "Error: Passwords do not match, please try again." -ForegroundColor Red

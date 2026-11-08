@@ -250,7 +250,7 @@ prompt_smtp_provider() {
 }
 
 clear
-echo "--------- Welcome to the Server Setup ---------"
+echo "--------- Spring Base Setup ---------"
 echo
 echo
 while true; do
@@ -260,7 +260,7 @@ while true; do
         break
     else
         clear
-        echo "--------- Welcome to the Server Setup ---------"
+        echo "--------- Spring Base Setup ---------"
         echo
         echo
         echo "Error: Secret must be exactly 64 characters (you entered ${#jwt_secret})" >&2
@@ -338,7 +338,7 @@ while true; do
         break
     else
         clear
-        echo "--------- Welcome to the Server Setup ---------"
+        echo "--------- Spring Base Setup ---------"
         echo
         echo
         echo "Error: Passwords do not match, please try again." >&2
