@@ -12,11 +12,13 @@ Write-Host @'
       |_|                 |___/
 '@
 Write-Host
+Write-Host "(Setup)"
 Write-Host
-Write-Host "--------- Database Mode ---------"
+Write-Host "--------- Database Configuration ---------"
 Write-Host
 Write-Host
 Write-Host "How should the MySQL database be setup?"
+Write-Host
 Write-Host "  [1] Let Spring Boot's docker compose handle it  (quick setup)"
 Write-Host "  [2] I'll provide my own MySQL server (no Docker needed)"
 Write-Host
