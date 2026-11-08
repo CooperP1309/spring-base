@@ -255,6 +255,14 @@ Write-Host
 while ($true) {
     $db_password         = Read-SecureInput "Enter your database password"
     Write-Host
+    # The mysql image's first-boot script puts MYSQL_ROOT_PASSWORD into SQL
+    # unescaped: ' breaks initialization and \ would act as an SQL escape.
+    if ($use_docker -and ($db_password.Contains("'") -or $db_password.Contains('\'))) {
+        Write-Host "Error: in Docker mode the database password can't contain ' or \" -ForegroundColor Red
+        Write-Host "       (the MySQL image can't initialize with them). Please choose another." -ForegroundColor Red
+        Write-Host
+        continue
+    }
     $db_password_confirm = Read-SecureInput "Confirm your database password"
     Write-Host
     if ($db_password -eq $db_password_confirm) { break }

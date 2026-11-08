@@ -265,6 +265,14 @@ echo
 while true; do
     read -rsp "Enter your database password: " db_password
     echo
+    # The mysql image's first-boot script puts MYSQL_ROOT_PASSWORD into SQL
+    # unescaped: ' breaks initialization and \ would act as an SQL escape.
+    if [[ $use_docker == true && ( $db_password == *\'* || $db_password == *\\* ) ]]; then
+        echo "Error: in Docker mode the database password can't contain ' or \\" >&2
+        echo "       (the MySQL image can't initialize with them). Please choose another." >&2
+        echo
+        continue
+    fi
     read -rsp "Confirm your database password: " db_password_confirm
     echo
     if [[ "$db_password" == "$db_password_confirm" ]]; then
