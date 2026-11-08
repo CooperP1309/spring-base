@@ -1,33 +1,114 @@
 #Requires -Version 5.1
 
 Clear-Host
+Write-Host "--------- Database Mode ---------"
+Write-Host
+Write-Host
+Write-Host "How should MySQL be provided?"
+Write-Host "  [d] Automate MySQL with Docker"
+Write-Host "  [s] I'll provide my own MySQL server (no Docker needed)"
+Write-Host
+$use_docker = $true
+while ($true) {
+    $modeChoice = Read-Host "(d/s)"
+    switch -Wildcard ($modeChoice.ToLower()) {
+        'd*' { $use_docker = $true;  break }
+        's*' { $use_docker = $false; break }
+        default { Write-Host "Please answer 'd' or 's'." -ForegroundColor Red; continue }
+    }
+    break
+}
+
 Write-Host
 Write-Host "Checking required services and tools..."
-
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Error "Docker is not installed or not in PATH."
-    exit 1
-}
 
 if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
     Write-Error "Java is not installed or not in PATH (needed by mvnw)."
     exit 1
 }
 
-docker info 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Docker daemon is NOT running."
-    exit 1
+if ($use_docker) {
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        Write-Error "Docker is not installed or not in PATH."
+        exit 1
+    }
+
+    docker info 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Docker daemon is NOT running."
+        exit 1
+    }
+    Write-Host "Docker daemon is running."
+
+    docker compose version 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "The Docker Compose plugin ('docker compose') is not available."
+        exit 1
+    }
 }
-Write-Host "Docker daemon is running."
 
 function Port-InUse {
     param([int]$Port)
     $tcpConn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
     if ($tcpConn) { return $true }
-    $dockerPorts = docker ps --format '{{.Ports}}' 2>$null
-    if ($dockerPorts -match "(^|,| )[0-9.]*:${Port}->") { return $true }
+    if ($use_docker) {
+        $dockerPorts = docker ps --format '{{.Ports}}' 2>$null
+        if ($dockerPorts -match "(^|,| )[0-9.]*:${Port}->") { return $true }
+    }
     return $false
+}
+
+# Returns $true if a TCP connection to host:port succeeds within 3s.
+function Test-TcpReachable {
+    param([string]$TargetHost, [int]$Port)
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $task = $client.ConnectAsync($TargetHost, $Port)
+        return ($task.Wait(3000) -and $client.Connected)
+    } catch {
+        return $false
+    } finally {
+        $client.Close()
+    }
+}
+
+# Prompts for the host and port of a user-provided MySQL server and checks
+# that something is accepting connections there. Returns @{ Host; Port }.
+function Prompt-MySqlServer {
+    while ($true) {
+        while ($true) {
+            $dbHost = Read-Host "MySQL host [localhost]"
+            if ([string]::IsNullOrEmpty($dbHost)) { $dbHost = 'localhost' }
+            if ($dbHost -match '^[A-Za-z0-9.-]+$') { break }
+            Write-Host "Error: '$dbHost' is not a valid hostname or IPv4 address." -ForegroundColor Red
+        }
+        while ($true) {
+            $raw = Read-Host "MySQL port [3306]"
+            if ([string]::IsNullOrEmpty($raw)) { $raw = '3306' }
+            if ($raw -match '^\d+$' -and [int]$raw -ge 1 -and [int]$raw -le 65535) {
+                $dbPort = [int]$raw; break
+            }
+            Write-Host "Error: '$raw' is not a valid port number." -ForegroundColor Red
+        }
+
+        if (Test-TcpReachable $dbHost $dbPort) {
+            Write-Host "MySQL server is reachable at ${dbHost}:${dbPort}."
+            return @{ Host = $dbHost; Port = $dbPort }
+        }
+
+        Write-Host "Warning: nothing is accepting connections at ${dbHost}:${dbPort}." -ForegroundColor Yellow
+        $retry = $false
+        while ($true) {
+            Write-Host "[r] Re-enter the host and port"
+            Write-Host "[k] Keep them anyway (e.g. the server isn't running yet)"
+            $choice = Read-Host "(r/k)"
+            if ($choice -match '^[Rr]') { $retry = $true; break }
+            if ($choice -match '^[Kk]') { break }
+            Write-Host "Please answer 'r' or 'k'." -ForegroundColor Red
+        }
+        if (-not $retry) { return @{ Host = $dbHost; Port = $dbPort } }
+        Write-Host
+    }
 }
 
 function Prompt-FreePort {
@@ -157,11 +238,17 @@ while ($true) {
     Write-Host
 }
 
-# ---- Database container name ----
+# ---- MySQL server (self-managed mode) ----
 Write-Host
-Write-Host "Enter your database container name (WARNING: Overwrites existing container with same name):"
-Write-Host
-$db_container_name = Read-Host
+if (-not $use_docker) {
+    Write-Host "Enter the connection details of your MySQL server."
+    Write-Host
+    $mysqlServer = Prompt-MySqlServer
+    $db_host     = $mysqlServer.Host
+    $db_port     = $mysqlServer.Port
+    $db_username = Read-Host "MySQL username [root]"
+    if ([string]::IsNullOrEmpty($db_username)) { $db_username = 'root' }
+}
 
 # ---- Database password ----
 Write-Host
@@ -183,7 +270,9 @@ while ($true) {
 Clear-Host
 Write-Host
 $server_port = Resolve-Port "Spring server"        8005
-$db_port     = Resolve-Port "MySQL container host" 3307
+if ($use_docker) {
+    $db_port = Resolve-Port "MySQL container host" 3307
+}
 
 # ---- SMTP setup ----
 Clear-Host
@@ -350,9 +439,18 @@ while ($true) {
 Clear-Host
 Write-Host
 Write-Host "--------- Configuration Summary ---------"
-Write-Host ("  {0,-26} {1}" -f "Database container name:", $db_container_name)
+if ($use_docker) {
+    Write-Host ("  {0,-26} {1}" -f "Database mode:",           "Docker (Spring Boot Docker Compose)")
+} else {
+    Write-Host ("  {0,-26} {1}" -f "Database mode:",           "Self-managed MySQL")
+}
 Write-Host ("  {0,-26} {1}" -f "Spring server port:",      $server_port)
-Write-Host ("  {0,-26} {1}" -f "MySQL host port:",         $db_port)
+if ($use_docker) {
+    Write-Host ("  {0,-26} {1}" -f "MySQL host port:",     $db_port)
+} else {
+    Write-Host ("  {0,-26} {1}" -f "MySQL server:",        "${db_host}:${db_port}")
+    Write-Host ("  {0,-26} {1}" -f "MySQL username:",      $db_username)
+}
 Write-Host ("  {0,-26} {1}" -f "SMTP host:",               $smtp_host)
 Write-Host ("  {0,-26} {1}" -f "SMTP port:",               $smtp_port)
 Write-Host ("  {0,-26} {1}" -f "SMTP username:",           $smtp_username)
@@ -368,6 +466,10 @@ Write-Host
 Write-Host "Note: All of the above (including passwords) is written in plain text to"
 Write-Host "      src/main/resources/application.properties and can be viewed or"
 Write-Host "      changed there later."
+if ($use_docker) {
+    Write-Host "      In Docker mode the database password and port are written to"
+    Write-Host "      compose.yaml instead, which is overwritten on every setup run."
+}
 Write-Host
 $confirm = Read-Host "Are you sure you want to continue? (y/n)"
 switch -Wildcard ($confirm.ToLower()) {
@@ -384,6 +486,64 @@ $propsFile = Join-Path $propsDir "application.properties"
 
 $tlsLine = if ($smtp_tls_prop) { $smtp_tls_prop } else { '' }
 
+if ($use_docker) {
+    # Escape the password for compose.yaml: '$' -> '$$' (Compose interpolation),
+    # then YAML single-quote it, doubling any embedded single quotes.
+    $yaml_password = "'" + $db_password.Replace('$', '$$').Replace("'", "''") + "'"
+
+    # compose.yaml and spring.docker.compose.enabled=true are always written
+    # together: Compose support fails at startup without a compose file.
+    # Must stay identical to the generator in setup.sh.
+    $composeYaml = @"
+# compose.yaml - GENERATED by setup. Do not commit. Re-running setup overwrites it.
+name: springboot   # fixed project name, so the volume is always springboot_mysql-data
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: $yaml_password
+      MYSQL_DATABASE: taskdb
+    ports:
+      - "${db_port}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      # 127.0.0.1 matters: MySQL's first-boot init runs with networking off, so this can't pass early
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"`$`$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 30s
+    labels:
+      org.springframework.boot.jdbc.parameters: "serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false"
+
+volumes:
+  mysql-data:
+"@
+    # LF endings, trailing newline and UTF-8 without BOM, so the file matches setup.sh's output.
+    $composeFile = Join-Path $PSScriptRoot "compose.yaml"
+    [System.IO.File]::WriteAllText($composeFile, ($composeYaml -replace "`r`n", "`n") + "`n",
+        (New-Object System.Text.UTF8Encoding $false))
+
+    $dbProps = @"
+# Spring Boot Docker Compose support: Spring starts MySQL from compose.yaml
+# and builds the datasource from it (user root, MYSQL_ROOT_PASSWORD,
+# MYSQL_DATABASE and the mapped host port), so no spring.datasource.* here.
+spring.docker.compose.enabled=true
+# Also start MySQL for tests: the @SpringBootTest context needs a datasource.
+spring.docker.compose.skip.in-tests=false
+"@
+} else {
+    $dbProps = @"
+# Spring Boot Docker Compose support is off: MySQL is managed outside of this app.
+spring.docker.compose.enabled=false
+spring.datasource.url=jdbc:mysql://${db_host}:${db_port}/taskdb?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
+spring.datasource.username=$db_username
+spring.datasource.password=$db_password
+"@
+}
+
 @"
 # Spring Specific
 spring.application.name=springboot
@@ -392,11 +552,7 @@ logging.level.root=INFO
 logging.level.org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer=ERROR
 
 # Database Configuration
-spring.datasource.url=jdbc:mysql://localhost:$db_port/taskdb?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
-spring.datasource.username=root
-spring.datasource.password=$db_password
-# Name of the Docker container running MySQL (used by start_server.ps1)
-db.container.name=$db_container_name
+$dbProps
 
 ## Hibernate properties
 spring.jpa.hibernate.ddl-auto=update
@@ -445,57 +601,31 @@ admin.email=$admin_email
 admin.password=$admin_password
 "@ | Out-File -FilePath $propsFile -Encoding utf8 -NoNewline
 
-# ---- Deploy MySQL container ----
-Write-Host "A MySQL Docker container is about to be deployed on port $db_port."
-$deploy_confirm = Read-Host "Would you like to proceed? (y/n)"
-if ($deploy_confirm -match '^[Yy]') {
-    $exists = docker ps -a --format '{{.Names}}' 2>$null | Where-Object { $_ -eq $db_container_name }
-    if ($exists) { docker rm -f $db_container_name | Out-Null }
-    docker run -d `
-        -e "MYSQL_ROOT_PASSWORD=$db_password" `
-        -e MYSQL_DATABASE=taskdb `
-        --name $db_container_name `
-        -p "${db_port}:3306" `
-        mysql:8.0
-}
-
-# ---- Wait for MySQL ----
-Clear-Host
-Write-Host "--------- Springboot Setup ---------"
-Write-Host
-Write-Host
-Write-Host "Waiting for MySQL to accept connections (first boot can take 15-30s)..."
-Write-Host
-
-for ($i = 1; $i -le 60; $i++) {
-    $running = docker ps --format '{{.Names}}' 2>$null | Where-Object { $_ -eq $db_container_name }
-    if (-not $running) {
-        Write-Error "MySQL container exited during startup."
-        docker logs --tail 20 $db_container_name 2>&1 | Write-Host
-        exit 1
-    }
-    docker exec $db_container_name mysqladmin ping -uroot "-p$db_password" --silent 2>$null | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "MySQL is ready."
-        Write-Host
-        break
-    }
-    if ($i -eq 60) {
-        Write-Error "MySQL did not become ready within 120s."
-        docker logs --tail 20 $db_container_name 2>&1 | Write-Host
-        exit 1
-    }
-    Start-Sleep -Seconds 2
-}
-
 # ---- Done ----
 Clear-Host
 Write-Host
 Write-Host "--------- Setup Complete ---------"
-Write-Host "Spring server port: $server_port"
-Write-Host "MySQL host port:    $db_port"
+if ($use_docker) {
+    Write-Host "Database mode:      Docker (Spring Boot Docker Compose)"
+    Write-Host "Spring server port: $server_port"
+    Write-Host "MySQL host port:    $db_port"
+} else {
+    Write-Host "Database mode:      Self-managed MySQL"
+    Write-Host "Spring server port: $server_port"
+    Write-Host "MySQL server:       ${db_host}:${db_port}"
+}
 Write-Host "SMTP host:          ${smtp_host}:${smtp_port}"
 Write-Host
+if (-not $use_docker -and (Test-Path (Join-Path $PSScriptRoot "compose.yaml"))) {
+    Write-Host "Note: compose.yaml from an earlier Docker-mode setup was left in place."
+    Write-Host "      It is ignored while spring.docker.compose.enabled=false."
+    Write-Host
+}
+if ($use_docker) {
+    Write-Host "MySQL is defined in the generated compose.yaml. Spring Boot starts it"
+    Write-Host "on 'spring-boot:run' (Docker must be running) and stops it on shutdown."
+    Write-Host
+}
 Write-Host "To start the server, run the following command:"
 Write-Host
-Write-Host ".\start.ps1"
+Write-Host ".\mvnw.cmd spring-boot:run"
