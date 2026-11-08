@@ -1,29 +1,67 @@
 #!/usr/bin/env bash
 
 clear
+cat <<'EOF'
+ _____            _              ______
+/  ___|          (_)             | ___ \
+\ `--. _ __  _ __ _ _ __   __ _  | |_/ / __ _ ___  ___
+ `--. \ '_ \| '__| | '_ \ / _` | | ___ \/ _` / __|/ _ \
+/\__/ / |_) | |  | | | | | (_| | | |_/ / (_| \__ \  __/
+\____/| .__/|_|  |_|_| |_|\__, | \____/ \__,_|___/\___|
+      | |                  __/ |
+      |_|                 |___/
+EOF
+echo
+echo "(Setup)"
+echo
+echo "--------- Database Configuration ---------"
+echo
+echo
+echo "How should the MySQL database be setup?"
+echo
+echo "  [1] Let Spring Boot's docker compose handle it  (quick setup)"
+echo "  [2] I'll provide my own MySQL server (no Docker needed)"
+echo
+while true; do
+    read -rp "(1/2): " mode_choice || { echo "Error: no input." >&2; exit 1; }
+    case "$mode_choice" in
+        1 ) use_docker=true; break;;
+        2 ) use_docker=false; break;;
+        * ) echo "Please answer '1' or '2'." >&2;;
+    esac
+done
+
 echo
 echo "Checking required services and tools..."
-
-if ! command -v docker &> /dev/null; then
-    echo "Error: Docker is not installed or not in PATH." >&2
-    exit 1
-fi
 
 if ! command -v java &> /dev/null; then
     echo "Error: Java is not installed or not in PATH (needed by ./mvnw)." >&2
     exit 1
 fi
 
-if docker info >/dev/null 2>&1; then
-    echo "Docker daemon is running."
-else
-    echo "Docker daemon is NOT running."
-    echo "(Or the install requires sudo... Or it's broken)"
-    exit 1
+if [[ $use_docker == true ]]; then
+    if ! command -v docker &> /dev/null; then
+        echo "Error: Docker is not installed or not in PATH." >&2
+        exit 1
+    fi
+
+    if docker info >/dev/null 2>&1; then
+        echo "Docker daemon is running."
+    else
+        echo "Docker daemon is NOT running."
+        echo "(Or the install requires sudo... Or it's broken)"
+        exit 1
+    fi
+
+    if ! docker compose version >/dev/null 2>&1; then
+        echo "Error: the Docker Compose plugin ('docker compose') is not available." >&2
+        exit 1
+    fi
 fi
 
 # Returns 0 (success) if the given TCP port is already taken, either by a
-# listening socket on the host or by a running Docker container's published port.
+# listening socket on the host or (in Docker mode) by a running Docker
+# container's published port.
 port_in_use() {
     local port=$1
     if command -v ss >/dev/null 2>&1; then
@@ -31,8 +69,58 @@ port_in_use() {
     elif command -v lsof >/dev/null 2>&1; then
         lsof -iTCP:"$port" -sTCP:LISTEN -Pn >/dev/null 2>&1 && return 0
     fi
-    docker ps --format '{{.Ports}}' | grep -qE "(^|,| )[0-9.]*:${port}->" && return 0
+    if [[ $use_docker == true ]]; then
+        docker ps --format '{{.Ports}}' | grep -qE "(^|,| )[0-9.]*:${port}->" && return 0
+    fi
     return 1
+}
+
+# Returns 0 (success) if a TCP connection to host:port succeeds within 3s.
+tcp_reachable() {
+    local probe='exec 3<>"/dev/tcp/$1/$2"'
+    if command -v timeout >/dev/null 2>&1; then
+        timeout 3 bash -c "$probe" _ "$1" "$2" 2>/dev/null
+    else
+        bash -c "$probe" _ "$1" "$2" 2>/dev/null
+    fi
+}
+
+# Prompts for the host and port of a user-provided MySQL server and checks
+# that something is accepting connections there. Sets db_host and db_port.
+prompt_mysql_server() {
+    while true; do
+        while true; do
+            read -rp "MySQL host [Default: localhost]: " db_host || { echo "Error: no input." >&2; exit 1; }
+            db_host=${db_host:-localhost}
+            [[ $db_host =~ ^[A-Za-z0-9.-]+$ ]] && break
+            echo "Error: '$db_host' is not a valid hostname or IPv4 address." >&2
+        done
+        while true; do
+            read -rp "MySQL port [Default: 3306]: " db_port || { echo "Error: no input." >&2; exit 1; }
+            db_port=${db_port:-3306}
+            if [[ $db_port =~ ^[0-9]+$ ]] && (( db_port >= 1 && db_port <= 65535 )); then
+                break
+            fi
+            echo "Error: '$db_port' is not a valid port number." >&2
+        done
+
+        if tcp_reachable "$db_host" "$db_port"; then
+            echo "MySQL server is reachable at $db_host:$db_port."
+            return
+        fi
+
+        echo "Warning: nothing is accepting connections at $db_host:$db_port." >&2
+        while true; do
+            echo "[r] Re-enter the host and port" >&2
+            echo "[k] Keep them anyway (e.g. the server isn't running yet)" >&2
+            read -rp "(r/k): " choice || { echo "Error: no input." >&2; exit 1; }
+            case "$choice" in
+                [Rr]* ) echo; continue 2 ;;
+                [Kk]* ) return ;;
+                * ) echo "Please answer 'r' or 'k'." >&2 ;;
+            esac
+        done
+    done
 }
 
 # Prompts for a valid, free port, re-prompting on bad or taken input.
@@ -162,7 +250,7 @@ prompt_smtp_provider() {
 }
 
 clear
-echo "--------- Welcome to the Server Setup ---------"
+echo "--------- Spring Base Setup ---------"
 echo
 echo
 while true; do
@@ -172,7 +260,7 @@ while true; do
         break
     else
         clear
-        echo "--------- Welcome to the Server Setup ---------"
+        echo "--------- Spring Base Setup ---------"
         echo
         echo
         echo "Error: Secret must be exactly 64 characters (you entered ${#jwt_secret})" >&2
@@ -180,20 +268,77 @@ while true; do
     fi
 done
 echo
-echo "Enter your database container name (WARNING: Overwrites existing container with same name):"
-echo
-read -rp "" db_container_name
+if [[ $use_docker == false ]]; then
+    echo "Enter the connection details of your MySQL server."
+    echo
+    prompt_mysql_server
+    read -rp "MySQL username [Default: root]: " db_username || { echo "Error: no input." >&2; exit 1; }
+    db_username=${db_username:-root}
+fi
+
+db_password_prompt="Enter your database password"
+reset_volume=false
+if [[ $use_docker == true ]]; then
+    # A running MySQL from an earlier setup would hold its host port (and its volume).
+    running_ids=$(docker ps -q --filter "label=com.docker.compose.project=springboot")
+    if [[ -n $running_ids ]]; then
+        echo "The MySQL container from an earlier setup is still running."
+        echo "Stop the Spring app first if it is running, then stop the container."
+        read -rp "Stop the container now? (y/n): " stop_choice || { echo "Error: no input." >&2; exit 1; }
+        case "$stop_choice" in
+            [Yy]* ) docker stop $running_ids >/dev/null || exit 1 ;;
+            * ) echo "Exiting..."; exit 1 ;;
+        esac
+        echo
+    fi
+
+    # MYSQL_ROOT_PASSWORD only takes effect when the volume is empty.
+    if docker volume inspect springboot_mysql-data >/dev/null 2>&1; then
+        echo "Existing MySQL data found (Docker volume springboot_mysql-data)."
+        echo "MySQL only applies a new password to an empty volume. Would you like to:"
+        while true; do
+            echo "[k] Keep the data (enter the CURRENT database password next)"
+            echo "[r] Reset: permanently delete ALL data, including all users, and set a new password"
+            echo
+            read -rp "(k/r): " volume_choice || { echo "Error: no input." >&2; exit 1; }
+            case "$volume_choice" in
+                [Kk]* )
+                    db_password_prompt="Enter your CURRENT database password"
+                    break
+                    ;;
+                [Rr]* )
+                    read -rp "This permanently deletes all users. Are you sure? (y/n): " reset_confirm \
+                        || { echo "Error: no input." >&2; exit 1; }
+                    if [[ $reset_confirm == [Yy]* ]]; then
+                        reset_volume=true
+                        break
+                    fi
+                    echo
+                    ;;
+                * ) echo "Please answer 'k' or 'r'." >&2 ;;
+            esac
+        done
+    fi
+fi
 echo
 while true; do
-    read -rsp "Enter your database password: " db_password
+    read -rsp "$db_password_prompt: " db_password
     echo
+    # The mysql image's first-boot script puts MYSQL_ROOT_PASSWORD into SQL
+    # unescaped: ' breaks initialization and \ would act as an SQL escape.
+    if [[ $use_docker == true && ( $db_password == *\'* || $db_password == *\\* ) ]]; then
+        echo "Error: in Docker mode the database password can't contain ' or \\" >&2
+        echo "       (the MySQL image can't initialize with them). Please choose another." >&2
+        echo
+        continue
+    fi
     read -rsp "Confirm your database password: " db_password_confirm
     echo
     if [[ "$db_password" == "$db_password_confirm" ]]; then
         break
     else
         clear
-        echo "--------- Welcome to the Server Setup ---------"
+        echo "--------- Spring Base Setup ---------"
         echo
         echo
         echo "Error: Passwords do not match, please try again." >&2
@@ -203,7 +348,9 @@ done
 clear
 echo
 server_port=$(resolve_port "Spring server" 8005) || exit 1
-db_port=$(resolve_port "MySQL container host" 3307) || exit 1
+if [[ $use_docker == true ]]; then
+    db_port=$(resolve_port "MySQL container host" 3307) || exit 1
+fi
 
 clear
 echo "--------- SMTP / Mail Setup ---------"
@@ -358,9 +505,23 @@ done
 clear
 echo
 echo "--------- Configuration Summary ---------"
-printf '  %-26s %s\n' "Database container name:" "$db_container_name"
+if [[ $use_docker == true ]]; then
+    printf '  %-26s %s\n' "Database mode:" "Docker (Spring Boot Docker Compose)"
+else
+    printf '  %-26s %s\n' "Database mode:" "Self-managed MySQL"
+fi
 printf '  %-26s %s\n' "Spring server port:" "$server_port"
-printf '  %-26s %s\n' "MySQL host port:" "$db_port"
+if [[ $use_docker == true ]]; then
+    printf '  %-26s %s\n' "MySQL host port:" "$db_port"
+    if [[ $reset_volume == true ]]; then
+        printf '  %-26s %s\n' "Existing MySQL data:" "DELETE (reset)"
+    elif docker volume inspect springboot_mysql-data >/dev/null 2>&1; then
+        printf '  %-26s %s\n' "Existing MySQL data:" "keep"
+    fi
+else
+    printf '  %-26s %s\n' "MySQL server:" "$db_host:$db_port"
+    printf '  %-26s %s\n' "MySQL username:" "$db_username"
+fi
 printf '  %-26s %s\n' "SMTP host:" "$smtp_host"
 printf '  %-26s %s\n' "SMTP port:" "$smtp_port"
 printf '  %-26s %s\n' "SMTP username:" "$smtp_username"
@@ -376,14 +537,87 @@ echo
 echo "Note: All of the above (including passwords) is written in plain text to"
 echo "      src/main/resources/application.properties and can be viewed or"
 echo "      changed there later."
+if [[ $use_docker == true ]]; then
+    echo "      In Docker mode the database password and port are written to"
+    echo "      compose.yaml instead, which is overwritten on every setup run."
+fi
 echo
 read -rp "Are you sure you want to continue? (y/n): " confirm
 case "$confirm" in
     [Yy]* ) echo "Proceeding...";;
     [Nn]* ) echo "Exiting..."; exit 1;;
-    * ) echo "Invalid response";;
+    * ) echo "Invalid response"; exit 1;;
 esac
 echo
+
+if [[ $reset_volume == true ]]; then
+    # Runs before compose.yaml is regenerated, so 'down -v' uses the old file.
+    echo "Deleting existing MySQL data..."
+    if [[ -f ./compose.yaml ]]; then
+        docker compose down -v
+    fi
+    # Fallback (no compose file, or one with a different project): containers
+    # still reference the volume, so remove them first.
+    if docker volume inspect springboot_mysql-data >/dev/null 2>&1; then
+        old_ids=$(docker ps -aq --filter "label=com.docker.compose.project=springboot")
+        [[ -n $old_ids ]] && docker rm -f $old_ids >/dev/null
+        docker volume rm springboot_mysql-data >/dev/null \
+            || { echo "Error: could not delete volume springboot_mysql-data." >&2; exit 1; }
+    fi
+    echo "MySQL data deleted."
+    echo
+fi
+
+if [[ $use_docker == true ]]; then
+    # Escape the password for compose.yaml: '$' -> '$$' (Compose interpolation),
+    # then YAML single-quote it, doubling any embedded single quotes.
+    yaml_password=${db_password//\$/\$\$}
+    yaml_password="'${yaml_password//\'/\'\'}'"
+
+    # compose.yaml and spring.docker.compose.enabled=true are always written
+    # together: Compose support fails at startup without a compose file.
+    cat > ./compose.yaml <<EOF
+# compose.yaml - GENERATED by setup. Do not commit. Re-running setup overwrites it.
+name: springboot   # fixed project name, so the volume is always springboot_mysql-data
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: $yaml_password
+      MYSQL_DATABASE: taskdb
+    ports:
+      - "$db_port:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      # 127.0.0.1 matters: MySQL's first-boot init runs with networking off, so this can't pass early
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"\$\$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 30s
+    labels:
+      org.springframework.boot.jdbc.parameters: "serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false"
+
+volumes:
+  mysql-data:
+EOF
+
+    db_props="# Spring Boot Docker Compose support: Spring starts MySQL from compose.yaml
+# and builds the datasource from it (user root, MYSQL_ROOT_PASSWORD,
+# MYSQL_DATABASE and the mapped host port), so no spring.datasource.* here.
+spring.docker.compose.enabled=true
+# Also start MySQL for tests: the @SpringBootTest context needs a datasource.
+spring.docker.compose.skip.in-tests=false"
+else
+    db_props="# Spring Boot Docker Compose support is off: MySQL is managed outside of this app.
+spring.docker.compose.enabled=false
+spring.datasource.url=jdbc:mysql://$db_host:$db_port/taskdb?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
+spring.datasource.username=$db_username
+spring.datasource.password=$db_password"
+fi
+
 mkdir -p ./src/main/resources
 echo "# Spring Specific
 spring.application.name=springboot
@@ -392,11 +626,7 @@ logging.level.root=INFO
 logging.level.org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer=ERROR
 
 # Database Configuration
-spring.datasource.url=jdbc:mysql://localhost:$db_port/taskdb?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
-spring.datasource.username=root
-spring.datasource.password=$db_password
-# Name of the Docker container running MySQL (used by start_server.sh)
-db.container.name=$db_container_name
+$db_props
 
 ## Hibernate properties
 spring.jpa.hibernate.ddl-auto=update
@@ -445,54 +675,31 @@ admin.email=$admin_email
 admin.password=$admin_password
 " > ./src/main/resources/application.properties
 
-# deploying MySQL container
-echo "A MySQL Docker container is about to be deployed on port $db_port."
-read -rp "Would you like to proceed? (y/n): " deploy_confirm
-case "$deploy_confirm" in
-[Yy]* )
-    if docker ps -a --format '{{.Names}}' | grep -Fxq -- "$db_container_name"; then
-        docker rm -f "$db_container_name"
-  fi
-  docker run -d -e MYSQL_ROOT_PASSWORD="$db_password" -e MYSQL_DATABASE=taskdb \
-        --name "$db_container_name" -p "$db_port":3306 mysql:8.0
-  ;;
-esac
-
-# testing deployment of the containers
-clear
-echo "--------- Springboot Setup ---------"
-echo
-echo
-echo "Waiting for MySQL to accept connections (first boot can take 15-30s)..."
-echo
-
-for i in $(seq 1 60); do
-    if ! docker ps --format '{{.Names}}' | grep -Fxq -- "$db_container_name"; then
-        echo "Error: MySQL container exited during startup." >&2
-        docker logs --tail 20 "$db_container_name" >&2
-        exit 1
-    fi
-    if docker exec "$db_container_name" \
-        mysqladmin ping -uroot -p"$db_password" --silent >/dev/null 2>&1; then
-        echo "MySQL is ready."
-        echo
-        break
-    fi
-    if [[ $i -eq 60 ]]; then
-        echo "Error: MySQL did not become ready within 120s." >&2
-        docker logs --tail 20 "$db_container_name" >&2
-        exit 1
-    fi
-    sleep 2
-done
-
 clear
 echo
 echo "--------- Setup Complete ---------"
-echo "Spring server port: $server_port"
-echo "MySQL host port:    $db_port"
+if [[ $use_docker == true ]]; then
+    echo "Database mode:      Docker (Spring Boot Docker Compose)"
+    echo "Spring server port: $server_port"
+    echo "MySQL host port:    $db_port"
+else
+    echo "Database mode:      Self-managed MySQL"
+    echo "Spring server port: $server_port"
+    echo "MySQL server:       $db_host:$db_port"
+fi
 echo "SMTP host:          $smtp_host:$smtp_port"
 echo
+if [[ $use_docker == false && -f compose.yaml ]]; then
+    echo "Note: compose.yaml from an earlier Docker-mode setup was left in place."
+    echo "      It is ignored while spring.docker.compose.enabled=false."
+    echo
+fi
+if [[ $use_docker == true ]]; then
+    echo "MySQL is defined in the generated compose.yaml. Spring Boot starts it"
+    echo "on 'spring-boot:run' (Docker must be running) and stops it on shutdown."
+    echo
+fi
 echo "To start the server, run the following command:"
 echo
-echo "./start.sh"
+echo "./mvnw spring-boot:run"
+echo
