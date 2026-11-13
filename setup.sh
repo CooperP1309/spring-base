@@ -582,7 +582,7 @@ name: springboot   # fixed project name, so the volume is always springboot_mysq
 
 services:
   mysql:
-    image: mysql:8.0
+    image: mysql:8.4
     environment:
       MYSQL_ROOT_PASSWORD: $yaml_password
       MYSQL_DATABASE: taskdb
