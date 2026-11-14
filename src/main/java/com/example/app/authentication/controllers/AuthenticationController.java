@@ -312,7 +312,7 @@ public class AuthenticationController
             log.info("Registration attempted for already-registered email: {}", newUser.getEmail());
             model.addAttribute("registrationSuccess", true);
 
-            return "register-page";
+            return "login-page";
         }
 
         // add user to db
@@ -332,7 +332,7 @@ public class AuthenticationController
             log.warn("Registration race detected for email: {}. Exception: {}", newUser.getEmail(), e.getMessage());
             model.addAttribute("registrationSuccess", true);
 
-            return "register-page";
+            return "login-page";
         }
 
         try
@@ -347,7 +347,7 @@ public class AuthenticationController
         log.info("User registered successfully: {}", newUser.getEmail());
         model.addAttribute("registrationSuccess", true);
 
-        return "register-page";
+        return "login-page";
     }
 
     @GetMapping("/verify/{secret}")
