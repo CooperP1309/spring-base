@@ -203,7 +203,7 @@ public class AuthenticationController
         {
             log.info("Password reset requested for unregistered email: {}", forgotPasswordDto.getEmail());   
             bindingResult.reject("password.reset.sent", "Password Reset link sent.");
-            return "forgot-password-page";
+            return "login-page";
         }
 
         User user = existingUser.get();
@@ -212,7 +212,7 @@ public class AuthenticationController
         {
             log.info("Password reset requested for unverified email: {}", forgotPasswordDto.getEmail());
             bindingResult.reject("password.reset.sent", "Password Reset link sent.");
-            return "forgot-password-page";
+            return "login-page"; 
         }
 
         log.info("Password reset requested for email: {}", forgotPasswordDto.getEmail());
@@ -230,7 +230,7 @@ public class AuthenticationController
 
         bindingResult.reject("password.reset.sent", "Password Reset link sent.");
 
-        return "forgot-password-page";
+        return "login-page";
     }
 
     @PostMapping("/register")
@@ -312,7 +312,7 @@ public class AuthenticationController
             log.info("Registration attempted for already-registered email: {}", newUser.getEmail());
             model.addAttribute("registrationSuccess", true);
 
-            return "register-page";
+            return "login-page";
         }
 
         // add user to db
@@ -332,7 +332,7 @@ public class AuthenticationController
             log.warn("Registration race detected for email: {}. Exception: {}", newUser.getEmail(), e.getMessage());
             model.addAttribute("registrationSuccess", true);
 
-            return "register-page";
+            return "login-page";
         }
 
         try
@@ -347,7 +347,7 @@ public class AuthenticationController
         log.info("User registered successfully: {}", newUser.getEmail());
         model.addAttribute("registrationSuccess", true);
 
-        return "register-page";
+        return "login-page";
     }
 
     @GetMapping("/verify/{secret}")
