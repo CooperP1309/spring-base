@@ -203,7 +203,7 @@ public class AuthenticationController
         {
             log.info("Password reset requested for unregistered email: {}", forgotPasswordDto.getEmail());   
             bindingResult.reject("password.reset.sent", "Password Reset link sent.");
-            return "forgot-password-page";
+            return "login-page";
         }
 
         User user = existingUser.get();
@@ -212,7 +212,7 @@ public class AuthenticationController
         {
             log.info("Password reset requested for unverified email: {}", forgotPasswordDto.getEmail());
             bindingResult.reject("password.reset.sent", "Password Reset link sent.");
-            return "forgot-password-page";
+            return "login-page"; 
         }
 
         log.info("Password reset requested for email: {}", forgotPasswordDto.getEmail());
@@ -230,7 +230,7 @@ public class AuthenticationController
 
         bindingResult.reject("password.reset.sent", "Password Reset link sent.");
 
-        return "forgot-password-page";
+        return "login-page";
     }
 
     @PostMapping("/register")
